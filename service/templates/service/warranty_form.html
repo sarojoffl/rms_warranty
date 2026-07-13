@@ -49,7 +49,7 @@
           </div>
           <div class="form-group">
             <label>Machine <span class="req">*</span></label>
-            {{ form.machine }}
+            <div class="machine-select" data-machine-options-url="{% url 'machine_options' %}">{{ form.machine }}</div>
             {{ form.machine.errors }}
             <span class="help-text"><a href="{% url 'machine_create' %}?next={{ request.path }}">+ New Machine</a></span>
           </div>

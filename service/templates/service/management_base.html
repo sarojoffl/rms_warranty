@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Management Reporting — Global Link{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="management-body">
+  <header class="management-topbar">
+    <a href="{% url 'management_dashboard' %}" class="management-brand">
+      <span>Global Link</span>
+      <small>Management Reporting</small>
+    </a>
+    <div class="management-user">
+      <span class="avatar">{{ request.user.username|slice:":2"|upper }}</span>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      <a href="{% url 'management_dashboard' %}" class="btn btn-outline btn-sm">Reports</a>
+      <a href="{% url 'management_logs' %}" class="btn btn-outline btn-sm">Activity logs</a>
+      <a href="{% url 'logout' %}" class="btn btn-outline btn-sm">Sign out</a>
+    </div>
+  </header>
+  <main class="management-content">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

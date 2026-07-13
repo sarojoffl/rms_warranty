@@ -1,0 +1,6 @@
+{% extends "service/base.html" %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block content %}
+<div class="page-head"><div><span class="eyebrow">Management</span><h2>Activity Logs</h2></div><a href="{% url 'management_dashboard' %}" class="btn btn-outline">← Reports</a></div>
+<div class="card"><div class="table-responsive"><table><thead><tr><th>Time</th><th>Area</th><th>Ticket</th><th>Action</th><th>User</th><th>Details</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.created_at|date:"j M Y, H:i" }}</td><td>{{ log.get_area_display }}</td><td class="job-num">{{ log.job_number }}</td><td>{{ log.action }}</td><td>{{ log.actor.username|default:"System" }}</td><td>{{ log.details|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6"><div class="empty-state"><strong>No activity logs yet</strong></div></td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

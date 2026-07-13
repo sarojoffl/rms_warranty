@@ -288,6 +288,38 @@ code, .mono { font-family: var(--font-mono); }
 
 .stat-card.amber .stat-value { color: var(--color-amber); }
 .stat-card.success .stat-value { color: var(--color-success); }
+.stat-link { color: inherit; transition: var(--transition); }
+.stat-link:hover { border-color: var(--color-accent-line); transform: translateY(-1px); }
+.stat-note { display: block; margin-top: 2px; font-size: 0.76rem; color: var(--color-ink-muted); }
+
+.dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.activity-list { display: flex; flex-direction: column; }
+.activity-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--color-line); color: var(--color-ink); }
+.activity-item:last-child { border-bottom: 0; }
+.activity-item:hover { background: var(--color-surface-2); }
+.activity-detail { display: block; max-width: 300px; margin-top: 3px; color: var(--color-ink-muted); font-size: 0.79rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-state.compact { padding: 36px 24px; }
+.dashboard-period { font-family: var(--font-mono); font-size: 0.74rem; color: var(--color-ink-muted); }
+.metric-list { padding: 4px 20px; }
+.metric-list div { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--color-line); }
+.metric-list div:last-child { border-bottom: 0; }
+.metric-list dt { color: var(--color-ink-muted); font-size: 0.84rem; }
+.metric-list dd { font-family: var(--font-mono); font-weight: 700; color: var(--color-ink); text-align: right; }
+
+/* Management reporting is intentionally separate from the help-desk shell. */
+.management-body { background: #f4f6fb; }
+.management-topbar { min-height: 74px; padding: 0 6vw; display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #162536; color: #fff; }
+.management-brand { display: flex; flex-direction: column; color: #fff; font-family: var(--font-display); font-size: 1.08rem; font-weight: 700; }
+.management-brand small { margin-top: 2px; color: #aebdca; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
+.management-user { display: flex; align-items: center; gap: 9px; color: #dce6ef; font-size: 0.82rem; font-weight: 600; }
+.management-user .avatar { background: #4f7cac; }
+.management-user .btn-outline { background: transparent; border-color: #506476; color: #fff; }
+.management-user .btn-outline:hover { border-color: #fff; color: #fff; }
+.management-content { width: min(1120px, 100%); margin: 0 auto; padding: 42px 28px; }
+.management-content .page-head { border-bottom: 1px solid var(--color-line); padding-bottom: 22px; }
+.management-content .stat-card { border-top: 3px solid var(--color-accent); }
+.management-content .stat-card.success { border-top-color: var(--color-success); }
+.management-content .stat-card.amber { border-top-color: var(--color-amber); }
 
 /* ==========================================================================
    Filter tabs
@@ -513,7 +545,7 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--color-line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: visible;
+  overflow: hidden;
   max-width: 720px;
   margin: 0 auto;
 }
@@ -557,6 +589,7 @@ input:focus, select:focus, textarea:focus {
 .ticket-fields.single { grid-template-columns: 1fr; }
 
 .ticket-field .tf-label {
+  display: block;
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -565,10 +598,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 .ticket-field .tf-value {
+  display: block;
   font-size: 0.9rem;
   color: var(--color-ink);
   margin-top: 3px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .ticket-field .tf-value.mono { font-family: var(--font-mono); }
@@ -579,7 +614,7 @@ input:focus, select:focus, textarea:focus {
   position: relative;
   height: 0;
   border-top: 2px dashed var(--color-line-strong);
-  margin: 0 26px;
+  margin: 0;
 }
 
 .perforation::before,
@@ -593,8 +628,8 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--color-line);
 }
 
-.perforation::before { left: -35px; }
-.perforation::after { right: -35px; }
+.perforation::before { left: -9px; }
+.perforation::after { right: -9px; }
 
 .ticket-foot {
   padding: 18px 26px 24px;
@@ -688,10 +723,28 @@ input:focus, select:focus, textarea:focus {
   .content { padding: 20px; }
   .form-grid { grid-template-columns: 1fr; }
   .stat-strip { grid-template-columns: 1fr 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr; }
   .topbar-date { display: none; }
   .ticket-fields { grid-template-columns: 1fr; }
-  .perforation::before { left: -9px; }
-  .perforation::after { right: -9px; }
+}
+
+@media (max-width: 560px) {
+  .stat-strip { grid-template-columns: 1fr; }
+  .activity-item { padding: 14px; }
+  .activity-detail { max-width: 190px; }
+  .management-topbar { padding: 16px 20px; align-items: flex-start; }
+  .management-user > span:not(.avatar) { display: none; }
+  .management-content { padding: 28px 20px; }
+}
+
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .sidebar, .topbar, .page-head, .ticket-foot { display: none; }
+  .main { margin: 0; }
+  .content { max-width: none; padding: 0; }
+  .ticket { max-width: none; border: 1px solid #777; box-shadow: none; }
+  .ticket-section, .ticket-head { break-inside: avoid; }
+  .perforation::before, .perforation::after { background: #fff; }
 }
 
 .sidebar-overlay {

@@ -1,20 +1,86 @@
-from datetime import date
+from datetime import date, timedelta
+from functools import wraps
 
 from django.contrib import messages
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .forms import (
     ClientForm, MachineForm, RepairJobEntryForm, RepairJobExitForm,
     WarrantyClaimEntryForm, WarrantyClaimExitForm,
 )
-from .models import RepairJob, WarrantyClaim
+from .models import ActivityLog, Client, Machine, RepairJob, WarrantyClaim
 from .pdf_utils import build_report_pdf
+
+MANAGEMENT_GROUP = "Management"
+
+
+def is_management_user(user):
+    """Management group members receive the reporting-only area."""
+    return user.is_authenticated and user.groups.filter(name=MANAGEMENT_GROUP).exists()
+
+
+def helpdesk_required(view_func):
+    """Keep reporting-only management accounts out of ticket screens."""
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(request, *args, **kwargs):
+        if is_management_user(request.user):
+            return redirect("management_dashboard")
+        return view_func(request, *args, **kwargs)
+    return wrapped_view
+
+
+def log_activity(request, area, job_number, action, details=""):
+    ActivityLog.objects.create(
+        actor=request.user if request.user.is_authenticated else None,
+        area=area, job_number=job_number, action=action, details=details,
+    )
+
+
+def management_required(view_func):
+    """Allow the management page only to users in the Management group."""
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(request, *args, **kwargs):
+        if not is_management_user(request.user):
+            return HttpResponseForbidden("You do not have access to management reporting.")
+        return view_func(request, *args, **kwargs)
+    return wrapped_view
+
+
+class RoleAwareLoginView(auth_views.LoginView):
+    """Send users to the dashboard that matches their granted access."""
+
+    def get_success_url(self):
+        redirect_to = self.get_redirect_url()
+        if redirect_to:
+            return redirect_to
+        if is_management_user(self.request.user):
+            return reverse("management_dashboard")
+        return reverse("dashboard")
 
 
 # ---------------------------------------------------------------------------
 # Quick-create: Client / Machine (used from the intake forms via "+ New" links)
 # ---------------------------------------------------------------------------
+
+@login_required
+def machine_options(request):
+    """Return the assets owned by a selected client for intake-form selects."""
+    client_id = request.GET.get("client_id")
+    machines = Machine.objects.none()
+    if client_id and client_id.isdigit():
+        machines = Machine.objects.filter(client_id=client_id)
+    return JsonResponse({
+        "machines": [
+            {"id": machine.pk, "label": str(machine)}
+            for machine in machines
+        ]
+    })
 
 def _safe_next(request, fallback):
     """Only redirect to a same-site path, never an open redirect."""
@@ -61,6 +127,67 @@ def machine_create(request):
 # ---------------------------------------------------------------------------
 
 @login_required
+def dashboard(request):
+    """Operational overview for staff at the start of a service-desk shift."""
+    repairs = RepairJob.objects.select_related("client", "machine")
+    claims = WarrantyClaim.objects.select_related("sold_to", "machine")
+    return render(request, "service/dashboard.html", {
+        "client_count": Client.objects.count(),
+        "machine_count": Machine.objects.count(),
+        "repair_total": repairs.count(),
+        "repair_pending": repairs.filter(status=RepairJob.Status.PENDING).count(),
+        "claim_total": claims.count(),
+        "claim_open": claims.filter(solved="").count(),
+        "claim_review": claims.filter(claimable="").count(),
+        "recent_repairs": repairs[:5],
+        "recent_claims": claims[:5],
+    })
+
+
+@management_required
+def management_dashboard(request):
+    """Read-only KPI overview for management users."""
+    today = date.today()
+    month_start = today.replace(day=1)
+    period_start = today - timedelta(days=30)
+    repairs = RepairJob.objects.all()
+    claims = WarrantyClaim.objects.all()
+    completed_this_month = repairs.filter(
+        status=RepairJob.Status.COMPLETED,
+        date_out__gte=month_start,
+    )
+    turnaround_days = [
+        (job.date_out - job.date_in).days
+        for job in completed_this_month.only("date_in", "date_out")
+        if job.date_out
+    ]
+
+    return render(request, "service/management_dashboard.html", {
+        "month_start": month_start,
+        "today": today,
+        "repairs_received_month": repairs.filter(date_in__gte=month_start).count(),
+        "repairs_completed_month": completed_this_month.count(),
+        "repair_backlog": repairs.filter(status=RepairJob.Status.PENDING).count(),
+        "average_turnaround": round(sum(turnaround_days) / len(turnaround_days), 1) if turnaround_days else None,
+        "claims_received_month": claims.filter(date_in__gte=month_start).count(),
+        "claims_claimable_month": claims.filter(
+            date_in__gte=month_start,
+            claimable=WarrantyClaim.Claimable.YES,
+        ).count(),
+        "claims_open": claims.filter(solved="").count(),
+        "repairs_last_30_days": repairs.filter(date_in__gte=period_start).count(),
+        "claims_last_30_days": claims.filter(date_in__gte=period_start).count(),
+        "recent_logs": ActivityLog.objects.select_related("actor")[:6],
+    })
+
+
+@management_required
+def management_logs(request):
+    return render(request, "service/management_logs.html", {
+        "logs": ActivityLog.objects.select_related("actor"),
+    })
+
+@login_required
 def repair_list(request):
     jobs = RepairJob.objects.select_related("client", "machine")
     status = request.GET.get("status")
@@ -76,6 +203,7 @@ def repair_create(request):
         form = RepairJobEntryForm(request.POST)
         if form.is_valid():
             job = form.save()
+            log_activity(request, ActivityLog.Area.REPAIR, job.job_number, "Repair intake logged", job.problem_cause[:255])
             messages.success(request, f"Repair job {job.job_number} logged.")
             return redirect("repair_detail", pk=job.pk)
     else:
@@ -91,6 +219,7 @@ def repair_exit(request, pk):
         form = RepairJobExitForm(request.POST, instance=job)
         if form.is_valid():
             form.save()
+            log_activity(request, ActivityLog.Area.REPAIR, job.job_number, "Repair exit updated", job.solution_detail[:255])
             messages.success(request, f"Repair job {job.job_number} updated.")
             return redirect("repair_detail", pk=job.pk)
     else:
@@ -150,6 +279,7 @@ def warranty_create(request):
         form = WarrantyClaimEntryForm(request.POST)
         if form.is_valid():
             claim = form.save()
+            log_activity(request, ActivityLog.Area.WARRANTY, claim.job_number, "Warranty claim logged", claim.report_warranty_claimed[:255])
             messages.success(request, f"Warranty claim {claim.job_number} logged.")
             return redirect("warranty_detail", pk=claim.pk)
     else:
@@ -165,6 +295,7 @@ def warranty_exit(request, pk):
         form = WarrantyClaimExitForm(request.POST, instance=claim)
         if form.is_valid():
             form.save()
+            log_activity(request, ActivityLog.Area.WARRANTY, claim.job_number, "Warranty exit updated", claim.not_solved_cause[:255])
             messages.success(request, f"Warranty claim {claim.job_number} updated.")
             return redirect("warranty_detail", pk=claim.pk)
     else:

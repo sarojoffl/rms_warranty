@@ -35,6 +35,14 @@ class RepairJobEntryForm(forms.ModelForm):
             "problem_cause": forms.Textarea(attrs={"rows": 4}),
         }
 
+    def clean(self):
+        cleaned = super().clean()
+        client = cleaned.get("client")
+        machine = cleaned.get("machine")
+        if client and machine and machine.client_id != client.id:
+            self.add_error("machine", "Choose a machine registered to the selected client.")
+        return cleaned
+
 
 class RepairJobExitForm(forms.ModelForm):
     class Meta:
@@ -44,6 +52,24 @@ class RepairJobExitForm(forms.ModelForm):
             "date_out": forms.DateInput(attrs={"type": "date"}),
             "solution_detail": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        date_out = cleaned.get("date_out")
+        status = cleaned.get("status")
+        solution_detail = cleaned.get("solution_detail")
+        taken_by = cleaned.get("taken_by")
+
+        if date_out and self.instance.date_in and date_out < self.instance.date_in:
+            self.add_error("date_out", "Date out cannot be before the intake date.")
+        if status == RepairJob.Status.COMPLETED:
+            if not date_out:
+                self.add_error("date_out", "A completed job needs a date out.")
+            if not solution_detail:
+                self.add_error("solution_detail", "Describe the repair or resolution before completing the job.")
+            if not taken_by:
+                self.add_error("taken_by", "Record who collected the machine before completing the job.")
+        return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -65,6 +91,10 @@ class WarrantyClaimEntryForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        client = cleaned.get("sold_to")
+        machine = cleaned.get("machine")
+        if client and machine and machine.client_id != client.id:
+            self.add_error("machine", "Choose a machine registered to the selected client.")
         if cleaned.get("claimable") == "yes" and not cleaned.get("report_warranty_claimed"):
             self.add_error("report_warranty_claimed", "Please describe the warranty claim.")
         return cleaned
@@ -81,6 +111,12 @@ class WarrantyClaimExitForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        sent_date_out = cleaned.get("sent_date_out")
+        solved = cleaned.get("solved")
+        if sent_date_out and self.instance.date_in and sent_date_out < self.instance.date_in:
+            self.add_error("sent_date_out", "Sent date cannot be before the intake date.")
+        if solved and not sent_date_out:
+            self.add_error("sent_date_out", "Provide the sent date when closing the claim.")
         if cleaned.get("solved") == "not_solved" and not cleaned.get("not_solved_cause"):
             self.add_error("not_solved_cause", "Please state the cause since it wasn't solved.")
         return cleaned

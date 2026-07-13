@@ -1,0 +1,59 @@
+{% extends "service/base.html" %}
+{% block page_title %}Management Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Management</span>
+    <h2>Business Overview</h2>
+  </div>
+  <span class="dashboard-period">Month to {{ today|date:"j M Y" }}</span>
+</div>
+
+<section class="stat-strip management-stats" aria-label="Monthly repair performance">
+  <div class="stat-card">
+    <span class="stat-label">Repairs received</span>
+    <span class="stat-value">{{ repairs_received_month }}</span>
+    <span class="stat-note">since {{ month_start|date:"j M" }}</span>
+  </div>
+  <div class="stat-card success">
+    <span class="stat-label">Repairs completed</span>
+    <span class="stat-value">{{ repairs_completed_month }}</span>
+    <span class="stat-note">this month</span>
+  </div>
+  <div class="stat-card amber">
+    <span class="stat-label">Current repair backlog</span>
+    <span class="stat-value">{{ repair_backlog }}</span>
+    <span class="stat-note">tickets still open</span>
+  </div>
+</section>
+
+<div class="dashboard-grid">
+  <section class="card metric-panel">
+    <div class="card-header"><h3>Service Efficiency</h3></div>
+    <dl class="metric-list">
+      <div><dt>Average repair turnaround</dt><dd>{% if average_turnaround is not None %}{{ average_turnaround }} days{% else %}—{% endif %}</dd></div>
+      <div><dt>Repair intakes, last 30 days</dt><dd>{{ repairs_last_30_days }}</dd></div>
+      <div><dt>Open repair tickets</dt><dd>{{ repair_backlog }}</dd></div>
+    </dl>
+  </section>
+  <section class="card metric-panel">
+    <div class="card-header"><h3>Warranty Overview</h3></div>
+    <dl class="metric-list">
+      <div><dt>Claims received this month</dt><dd>{{ claims_received_month }}</dd></div>
+      <div><dt>Claimable this month</dt><dd>{{ claims_claimable_month }}</dd></div>
+      <div><dt>Claims still open</dt><dd>{{ claims_open }}</dd></div>
+      <div><dt>Claims received, last 30 days</dt><dd>{{ claims_last_30_days }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<section class="card management-logs-preview">
+  <div class="card-header"><h3>Recent Activity</h3><a href="{% url 'management_logs' %}" class="btn btn-outline btn-sm">View all logs</a></div>
+  <div class="activity-list">
+    {% for log in recent_logs %}
+    <div class="activity-item"><div><span class="job-num">{{ log.job_number }}</span><span class="activity-detail">{{ log.action }}{% if log.actor %} · {{ log.actor.username }}{% endif %}{% if log.details %} · {{ log.details }}{% endif %}</span></div><span class="stamp neutral">{{ log.created_at|date:"j M, H:i" }}</span></div>
+    {% empty %}<div class="empty-state compact"><strong>No activity logged yet</strong><p>New ticket actions will appear here.</p></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

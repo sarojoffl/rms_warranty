@@ -1,0 +1,69 @@
+{% extends "service/base.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Service Desk</span>
+    <h2>Operations Dashboard</h2>
+  </div>
+  <div class="btn-row">
+    <a href="{% url 'repair_create' %}" class="btn btn-primary">+ Repair Intake</a>
+    <a href="{% url 'warranty_create' %}" class="btn btn-outline">+ Warranty Claim</a>
+  </div>
+</div>
+
+<section class="stat-strip dashboard-stats" aria-label="Service desk totals">
+  <a href="{% url 'repair_list' %}?status=pending" class="stat-card amber stat-link">
+    <span class="stat-label">Repairs awaiting action</span>
+    <span class="stat-value">{{ repair_pending }}</span>
+    <span class="stat-note">of {{ repair_total }} total repairs</span>
+  </a>
+  <a href="{% url 'warranty_list' %}" class="stat-card stat-link">
+    <span class="stat-label">Open warranty claims</span>
+    <span class="stat-value">{{ claim_open }}</span>
+    <span class="stat-note">{{ claim_review }} awaiting review</span>
+  </a>
+  <div class="stat-card">
+    <span class="stat-label">Registered assets</span>
+    <span class="stat-value">{{ machine_count }}</span>
+    <span class="stat-note">across {{ client_count }} clients</span>
+  </div>
+</section>
+
+<div class="dashboard-grid">
+  <section class="card">
+    <div class="card-header">
+      <h3>Recent Repair Jobs</h3>
+      <a href="{% url 'repair_list' %}" class="btn btn-outline btn-sm">View all</a>
+    </div>
+    <div class="activity-list">
+      {% for job in recent_repairs %}
+      <a class="activity-item" href="{% url 'repair_detail' job.pk %}">
+        <div><span class="job-num">{{ job.job_number }}</span><span class="activity-detail">{{ job.client.name }} · {{ job.machine }}</span></div>
+        <span class="stamp {{ job.status }}">{{ job.get_status_display }}</span>
+      </a>
+      {% empty %}
+      <div class="empty-state compact"><strong>No repair jobs yet</strong><p>Log a repair intake to see it here.</p></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h3>Recent Warranty Claims</h3>
+      <a href="{% url 'warranty_list' %}" class="btn btn-outline btn-sm">View all</a>
+    </div>
+    <div class="activity-list">
+      {% for claim in recent_claims %}
+      <a class="activity-item" href="{% url 'warranty_detail' claim.pk %}">
+        <div><span class="job-num">{{ claim.job_number }}</span><span class="activity-detail">{{ claim.sold_to.name }} · {{ claim.machine }}</span></div>
+        {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
+      </a>
+      {% empty %}
+      <div class="empty-state compact"><strong>No warranty claims yet</strong><p>Log a warranty claim to see it here.</p></div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -30,6 +30,16 @@ class Machine(models.Model):
     serial_number = models.CharField(max_length=100, blank=True)
     details = models.TextField(blank=True, help_text="Any other identifying details")
 
+    class Meta:
+        ordering = ["client__name", "machine_type", "brand", "model_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["serial_number"],
+                condition=~models.Q(serial_number=""),
+                name="unique_machine_serial_when_present",
+            )
+        ]
+
     def __str__(self):
         parts = [self.brand, self.model_name]
         label = " ".join(p for p in parts if p) or self.machine_type
@@ -133,3 +143,22 @@ class WarrantyClaim(models.Model):
 
     def __str__(self):
         return f"{self.job_number} — {self.sold_to}"
+
+
+class ActivityLog(models.Model):
+    class Area(models.TextChoices):
+        REPAIR = "repair", "Repair"
+        WARRANTY = "warranty", "Warranty"
+
+    actor = models.ForeignKey("auth.User", null=True, blank=True, on_delete=models.SET_NULL)
+    area = models.CharField(max_length=20, choices=Area.choices)
+    job_number = models.CharField(max_length=20)
+    action = models.CharField(max_length=100)
+    details = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.job_number}: {self.action}"

@@ -44,4 +44,54 @@ document.addEventListener('DOMContentLoaded', function () {
     solved.addEventListener('change', toggleCause);
     toggleCause();
   }
+
+  // Limit intake machines to assets owned by the selected client. The form
+  // still validates this on the server, so a manually altered request is safe.
+  var clientSelect = document.getElementById('id_client') || document.getElementById('id_sold_to');
+  var machineSelect = document.getElementById('id_machine');
+  var machineSelectWrap = document.querySelector('.machine-select');
+  if (clientSelect && machineSelect && machineSelectWrap) {
+    var optionsUrl = machineSelectWrap.dataset.machineOptionsUrl;
+    var selectedMachine = machineSelect.value;
+
+    function setMachinePlaceholder(text, disabled) {
+      machineSelect.replaceChildren(new Option(text, ''));
+      machineSelect.disabled = disabled;
+    }
+
+    function loadClientMachines() {
+      var clientId = clientSelect.value;
+      if (!clientId) {
+        setMachinePlaceholder('Select a client first', true);
+        return;
+      }
+
+      machineSelect.disabled = true;
+      setMachinePlaceholder('Loading machines…', true);
+      fetch(optionsUrl + '?client_id=' + encodeURIComponent(clientId), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('Could not load machines');
+          return response.json();
+        })
+        .then(function (data) {
+          machineSelect.replaceChildren(new Option('Select a machine', ''));
+          data.machines.forEach(function (machine) {
+            machineSelect.add(new Option(machine.label, machine.id, false, String(machine.id) === String(selectedMachine)));
+          });
+          machineSelect.disabled = false;
+          selectedMachine = '';
+        })
+        .catch(function () {
+          setMachinePlaceholder('Unable to load machines — try again', true);
+        });
+    }
+
+    clientSelect.addEventListener('change', function () {
+      selectedMachine = '';
+      loadClientMachines();
+    });
+    loadClientMachines();
+  }
 });
