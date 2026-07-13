@@ -1,0 +1,34 @@
+{% extends "service/base.html" %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Quick Add</span>
+    <h2>{{ title }}</h2>
+  </div>
+</div>
+
+<div class="card" style="max-width:560px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">
+        {% for field in form %}
+          <div class="form-group {% if field.name == 'details' or field.name == 'address' %}full{% endif %}">
+            <label>{{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}</label>
+            {{ field }}
+            {{ field.errors }}
+            {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% if next %}{{ next }}{% else %}{% url 'repair_list' %}{% endif %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

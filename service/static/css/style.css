@@ -1,0 +1,703 @@
+/* ==========================================================================
+   Global Link Service Desk — Workshop Ticket Design System
+   Light theme. Palette + type chosen for an electronics-repair intake desk:
+   ledger-blue ink on pale paper, mono job numbers, stamp-style status badges,
+   and a carbon-copy ticket layout on the detail screen.
+   ========================================================================== */
+
+:root {
+  --color-bg: #eff2f0;
+  --color-bg-inset: #e6ebe8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7f9f8;
+
+  --color-ink: #1a2430;
+  --color-ink-muted: #64707a;
+  --color-ink-faint: #93a0a8;
+
+  --color-line: #d6dcd8;
+  --color-line-strong: #b9c2bd;
+
+  --color-accent: #2b4c6f;
+  --color-accent-soft: rgba(43, 76, 111, 0.08);
+  --color-accent-line: rgba(43, 76, 111, 0.25);
+
+  --color-amber: #a8680a;
+  --color-amber-soft: rgba(168, 104, 10, 0.1);
+  --color-amber-line: rgba(168, 104, 10, 0.3);
+
+  --color-success: #2e7d53;
+  --color-success-soft: rgba(46, 125, 83, 0.1);
+  --color-success-line: rgba(46, 125, 83, 0.3);
+
+  --color-danger: #a23b2e;
+  --color-danger-soft: rgba(162, 59, 46, 0.1);
+  --color-danger-line: rgba(162, 59, 46, 0.3);
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+
+  --sidebar-width: 224px;
+  --topbar-height: 64px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(26, 36, 48, 0.04), 0 8px 24px -12px rgba(26, 36, 48, 0.12);
+  --transition: all 0.16s ease;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+
+code, .mono { font-family: var(--font-mono); }
+
+/* ==========================================================================
+   Shell layout
+   ========================================================================== */
+
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-line);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  z-index: 100;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-brand {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.sidebar-brand .brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
+
+.sidebar-brand .brand-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-muted);
+  font-weight: 500;
+  font-size: 0.86rem;
+  transition: var(--transition);
+}
+
+.nav-item:hover { background: var(--color-surface-2); color: var(--color-ink); }
+
+.nav-item.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; }
+
+.nav-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  background: var(--color-ink);
+  color: var(--color-surface);
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+
+.nav-item.active .nav-count { background: var(--color-accent); }
+
+.sidebar-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-line);
+  font-size: 0.76rem;
+  color: var(--color-ink-faint);
+}
+
+.main { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+  height: var(--topbar-height);
+  background: rgba(239, 242, 240, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 16px;
+}
+
+.topbar h1 {
+  font-size: 1.08rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+
+.topbar-date {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--color-ink-muted);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; font-weight: 700;
+}
+
+.icon-btn {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: var(--transition);
+}
+.icon-btn:hover { color: var(--color-danger); border-color: var(--color-danger-line); }
+.icon-btn svg { width: 15px; height: 15px; stroke: currentColor; }
+
+.hamburger {
+  display: none;
+  width: 32px; height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.hamburger span { width: 15px; height: 1.5px; background: var(--color-ink); border-radius: 1px; }
+
+.content { flex: 1; padding: 28px; max-width: 1240px; width: 100%; margin: 0 auto; }
+
+/* ==========================================================================
+   Page header row
+   ========================================================================== */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.page-head .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-faint);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.page-head h2 { font-size: 1.4rem; }
+
+/* ==========================================================================
+   Stat strip
+   ========================================================================== */
+
+.stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.stat-card .stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-faint);
+}
+
+.stat-card .stat-value {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.stat-card.amber .stat-value { color: var(--color-amber); }
+.stat-card.success .stat-value { color: var(--color-success); }
+
+/* ==========================================================================
+   Filter tabs
+   ========================================================================== */
+
+.filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+
+.filter-tab {
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: var(--transition);
+}
+
+.filter-tab:hover { border-color: var(--color-accent-line); color: var(--color-accent); }
+
+.filter-tab.active {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Card & table
+   ========================================================================== */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+
+.card-header h3 { font-size: 0.95rem; }
+
+.card-body { padding: 20px; }
+
+.table-responsive { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+th {
+  text-align: left;
+  padding: 11px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-faint);
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+}
+
+td {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: middle;
+}
+
+tbody tr:hover td { background: var(--color-surface-2); }
+tbody tr:last-child td { border-bottom: none; }
+
+.job-num { font-family: var(--font-mono); font-weight: 600; color: var(--color-ink); }
+
+/* ==========================================================================
+   Stamp-style status badges — the signature motif, echoed from the ticket
+   ========================================================================== */
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border: 1.5px dashed currentColor;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transform: rotate(-1.5deg);
+  white-space: nowrap;
+}
+
+.stamp::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.stamp.pending { color: var(--color-amber); background: var(--color-amber-soft); }
+.stamp.completed, .stamp.solved, .stamp.yes { color: var(--color-success); background: var(--color-success-soft); }
+.stamp.not_solved, .stamp.no { color: var(--color-danger); background: var(--color-danger-soft); }
+.stamp.neutral { color: var(--color-ink-muted); background: var(--color-surface-2); }
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.btn svg { width: 14px; height: 14px; stroke: currentColor; }
+
+.btn-primary { background: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: #223e5a; }
+
+.btn-outline { background: var(--color-surface); border-color: var(--color-line); color: var(--color-ink); }
+.btn-outline:hover { border-color: var(--color-accent-line); color: var(--color-accent); }
+
+.btn-success { background: var(--color-success-soft); color: var(--color-success); border-color: var(--color-success-line); }
+.btn-success:hover { background: var(--color-success); color: #fff; }
+
+.btn-sm { padding: 6px 12px; font-size: 0.76rem; }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+
+label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+label .req { color: var(--color-danger); }
+
+input, select, textarea {
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  font-size: 0.86rem;
+  font-family: inherit;
+  color: var(--color-ink);
+  transition: var(--transition);
+  width: 100%;
+}
+
+textarea { resize: vertical; min-height: 84px; }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.errorlist { list-style: none; color: var(--color-danger); font-size: 0.76rem; margin-top: 4px; font-weight: 600; }
+
+.help-text { font-size: 0.74rem; color: var(--color-ink-faint); margin-top: 2px; }
+
+.form-actions {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Auto-fill summary block shown at top of exit forms */
+.autofill-strip {
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 18px;
+}
+
+.autofill-strip .af-item .af-label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-ink-faint);
+  display: block;
+}
+
+.autofill-strip .af-item .af-value {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   Ticket detail view — the signature: a two-part carbon-copy service ticket
+   split by a dashed perforation with punched notches on either edge.
+   ========================================================================== */
+
+.ticket {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: visible;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.ticket-head {
+  padding: 22px 26px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ticket-head .ticket-kind {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-faint);
+}
+
+.ticket-head .ticket-number {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-top: 2px;
+}
+
+.ticket-section { padding: 20px 26px; }
+
+.ticket-section h4 {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-faint);
+  margin-bottom: 14px;
+}
+
+.ticket-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.ticket-fields.single { grid-template-columns: 1fr; }
+
+.ticket-field .tf-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-faint);
+  font-weight: 700;
+}
+
+.ticket-field .tf-value {
+  font-size: 0.9rem;
+  color: var(--color-ink);
+  margin-top: 3px;
+  line-height: 1.45;
+}
+
+.ticket-field .tf-value.mono { font-family: var(--font-mono); }
+.ticket-field .tf-value.empty { color: var(--color-ink-faint); font-style: italic; }
+
+/* Perforation divider between entry (shop copy) and exit (customer copy) */
+.perforation {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed var(--color-line-strong);
+  margin: 0 26px;
+}
+
+.perforation::before,
+.perforation::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+}
+
+.perforation::before { left: -35px; }
+.perforation::after { right: -35px; }
+
+.ticket-foot {
+  padding: 18px 26px 24px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-line);
+}
+
+/* ==========================================================================
+   Messages / notices
+   ========================================================================== */
+
+.notice {
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notice.error { background: var(--color-danger-soft); border-color: var(--color-danger-line); color: var(--color-danger); }
+
+.notice-close {
+  background: none; border: none; font-size: 1.2rem; line-height: 1; cursor: pointer; color: inherit; opacity: 0.6;
+}
+.notice-close:hover { opacity: 1; }
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.empty-state {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--color-ink-faint);
+}
+
+.empty-state .empty-icon { margin-bottom: 12px; opacity: 0.5; }
+.empty-state svg { width: 34px; height: 34px; stroke: currentColor; }
+.empty-state p { font-size: 0.88rem; margin-top: 6px; }
+
+/* ==========================================================================
+   Login page
+   ========================================================================== */
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 34px 32px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-card .brand-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+.login-card .brand-sub {
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-ink-faint);
+  text-transform: uppercase; letter-spacing: 0.1em; display: block; margin: 4px 0 24px;
+}
+
+.login-card .form-group { margin-bottom: 16px; }
+.login-card .btn { width: 100%; justify-content: center; margin-top: 6px; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); box-shadow: none; }
+  .sidebar.open { transform: translateX(0); box-shadow: 10px 0 30px rgba(26,36,48,0.15); }
+  .main { margin-left: 0; }
+  .hamburger { display: flex; }
+  .content { padding: 20px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+  .topbar-date { display: none; }
+  .ticket-fields { grid-template-columns: 1fr; }
+  .perforation::before { left: -9px; }
+  .perforation::after { right: -9px; }
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(26, 36, 48, 0.4);
+  z-index: 90;
+}
+.sidebar-overlay.open { display: block; }

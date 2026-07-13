@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Service Desk — Global Link Technology{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="app">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-name">Global Link</span>
+      <span class="brand-sub">Service Desk</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{% url 'repair_list' %}" class="nav-item {% if request.resolver_match.url_name in 'repair_list,repair_create,repair_detail,repair_exit' %}active{% endif %}">
+        <svg fill="none" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Repair Jobs
+      </a>
+      <a href="{% url 'warranty_list' %}" class="nav-item {% if request.resolver_match.url_name in 'warranty_list,warranty_create,warranty_detail,warranty_exit' %}active{% endif %}">
+        <svg fill="none" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Warranty Claims
+      </a>
+    </nav>
+    <div class="sidebar-foot">Global Link Technology Pvt. Ltd.</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+        <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <h1>{% block page_title %}Service Desk{% endblock %}</h1>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-date">{% now "l, j F Y" %}</span>
+        {% if request.user.is_authenticated %}
+        <span class="user-chip">
+          <span class="avatar">{{ request.user.username|slice:":2"|upper }}</span>
+          {{ request.user.get_full_name|default:request.user.username }}
+        </span>
+        <a href="{% url 'logout' %}" class="icon-btn" title="Sign out" aria-label="Sign out">
+          <svg fill="none" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="content">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="notice {% if message.tags == 'error' %}error{% endif %}">
+            <span>{{ message }}</span>
+            <button type="button" class="notice-close" aria-label="Dismiss">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

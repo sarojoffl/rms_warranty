@@ -1,0 +1,72 @@
+{% extends "service/base.html" %}
+{% block page_title %}{{ claim.job_number }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Warranty · Ticket</span>
+    <h2>{{ claim.job_number }}</h2>
+  </div>
+  <a href="{% url 'warranty_list' %}" class="btn btn-outline">&larr; All Warranty Claims</a>
+</div>
+
+<div class="ticket">
+  <div class="ticket-head">
+    <div>
+      <span class="ticket-kind">Warranty Intake — Shop Copy</span>
+      <div class="ticket-number">{{ claim.job_number }}</div>
+    </div>
+    {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending Review</span>{% endif %}
+  </div>
+
+  <div class="ticket-section">
+    <h4>Intake Details</h4>
+    <div class="ticket-fields">
+      <div class="ticket-field"><span class="tf-label">Date In</span><span class="tf-value">{{ claim.date_in }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Received By</span><span class="tf-value">{{ claim.received_by }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Sold To</span><span class="tf-value">{{ claim.sold_to.name }}{% if claim.sold_to.company_name %} — {{ claim.sold_to.company_name }}{% endif %}</span></div>
+      <div class="ticket-field"><span class="tf-label">Bought From</span><span class="tf-value">{{ claim.bought_from|default:"—" }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Machine</span><span class="tf-value">{{ claim.machine.machine_type }} — {{ claim.machine.brand }} {{ claim.machine.model_name }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Serial No.</span><span class="tf-value mono">{{ claim.machine.serial_number|default:"—" }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Warranty Sent</span><span class="tf-value">{{ claim.warranty_sent_date|default:"—" }}</span></div>
+    </div>
+    {% if claim.report_warranty_claimed %}
+    <div class="ticket-fields single" style="margin-top:14px;">
+      <div class="ticket-field"><span class="tf-label">Warranty Claimed Report</span><span class="tf-value">{{ claim.report_warranty_claimed }}</span></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="perforation"></div>
+
+  <div class="ticket-section">
+    <h4>Exit — Customer Copy</h4>
+    {% if claim.solved %}
+      <div class="ticket-fields">
+        <div class="ticket-field"><span class="tf-label">Solved</span><span class="tf-value"><span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span></span></div>
+        <div class="ticket-field"><span class="tf-label">Sent Date (Exit)</span><span class="tf-value">{{ claim.sent_date_out|default:"—" }}</span></div>
+        <div class="ticket-field"><span class="tf-label">Report</span><span class="tf-value">{% if claim.report_complete %}Complete{% else %}Incomplete{% endif %}</span></div>
+      </div>
+      {% if claim.not_solved_cause %}
+      <div class="ticket-fields single" style="margin-top:14px;">
+        <div class="ticket-field"><span class="tf-label">Cause</span><span class="tf-value">{{ claim.not_solved_cause }}</span></div>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="ticket-field"><span class="tf-value empty">Not yet completed — this half of the ticket fills in on exit.</span></div>
+    {% endif %}
+  </div>
+
+  <div class="ticket-foot">
+    <a href="{% url 'warranty_export_pdf' claim.pk %}" class="btn btn-outline">
+      <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print / Export PDF
+    </a>
+    {% if not claim.solved %}
+      <a href="{% url 'warranty_exit' claim.pk %}" class="btn btn-success">Complete Exit Ticket</a>
+    {% else %}
+      <a href="{% url 'warranty_exit' claim.pk %}" class="btn btn-outline">Edit Exit Details</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

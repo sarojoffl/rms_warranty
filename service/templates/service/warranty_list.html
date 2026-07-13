@@ -1,0 +1,64 @@
+{% extends "service/base.html" %}
+{% block page_title %}Warranty Claims{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Warranty</span>
+    <h2>Warranty Claims</h2>
+  </div>
+  <a href="{% url 'warranty_create' %}" class="btn btn-primary">
+    <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Intake
+  </a>
+</div>
+
+<div class="filter-tabs">
+  <a href="{% url 'warranty_list' %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
+  <a href="?claimable=yes" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Claimable</a>
+  <a href="?claimable=no" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Not Claimable</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Job No.</th>
+          <th>Date In</th>
+          <th>Sold To</th>
+          <th>Machine</th>
+          <th>Claimable</th>
+          <th>Repair Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for claim in claims %}
+        <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
+          <td class="job-num">{{ claim.job_number }}</td>
+          <td>{{ claim.date_in }}</td>
+          <td>{{ claim.sold_to.name }}</td>
+          <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
+          <td>
+            {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending</span>{% endif %}
+          </td>
+          <td>
+            {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg fill="none" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <strong>No warranty claims yet</strong>
+            <p>Log a new intake to open the first ticket.</p>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

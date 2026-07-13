@@ -1,0 +1,91 @@
+{% extends "service/base.html" %}
+{% block page_title %}{% if mode == 'entry' %}New Repair Intake{% else %}Repair Exit — {{ job.job_number }}{% endif %}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">RMS · {% if mode == 'entry' %}Intake Ticket{% else %}Exit Ticket{% endif %}</span>
+    <h2>{% if mode == 'entry' %}New Repair Intake{% else %}Complete Repair — {{ job.job_number }}{% endif %}</h2>
+  </div>
+</div>
+
+{% if mode == 'exit' %}
+<div class="autofill-strip">
+  <div class="af-item"><span class="af-label">Job No.</span><span class="af-value mono">{{ job.job_number }}</span></div>
+  <div class="af-item"><span class="af-label">Client</span><span class="af-value">{{ job.client.name }}</span></div>
+  <div class="af-item"><span class="af-label">Machine</span><span class="af-value">{{ job.machine.machine_type }} — {{ job.machine.brand }} {{ job.machine.model_name }}</span></div>
+  <div class="af-item"><span class="af-label">Serial No.</span><span class="af-value mono">{{ job.machine.serial_number|default:"—" }}</span></div>
+  <div class="af-item"><span class="af-label">Date In</span><span class="af-value">{{ job.date_in }}</span></div>
+  <div class="af-item"><span class="af-label">Problem / Cause</span><span class="af-value">{{ job.problem_cause }}</span></div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if mode == 'entry' %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Date In <span class="req">*</span></label>
+            {{ form.date_in }}
+            {{ form.date_in.errors }}
+          </div>
+          <div class="form-group">
+            <label>Client <span class="req">*</span></label>
+            {{ form.client }}
+            {{ form.client.errors }}
+            <span class="help-text"><a href="{% url 'client_create' %}?next={{ request.path }}">+ New Client</a></span>
+          </div>
+          <div class="form-group">
+            <label>Received By <span class="req">*</span></label>
+            {{ form.received_by }}
+            {{ form.received_by.errors }}
+          </div>
+          <div class="form-group">
+            <label>Machine <span class="req">*</span></label>
+            {{ form.machine }}
+            {{ form.machine.errors }}
+            <span class="help-text"><a href="{% url 'machine_create' %}?next={{ request.path }}">+ New Machine</a></span>
+          </div>
+          <div class="form-group full">
+            <label>Problem / Cause <span class="req">*</span></label>
+            {{ form.problem_cause }}
+            {{ form.problem_cause.errors }}
+          </div>
+        </div>
+      {% else %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Date Out</label>
+            {{ form.date_out }}
+            {{ form.date_out.errors }}
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            {{ form.status }}
+            {{ form.status.errors }}
+          </div>
+          <div class="form-group">
+            <label>Taken By</label>
+            {{ form.taken_by }}
+            {{ form.taken_by.errors }}
+          </div>
+          <div class="form-group full">
+            <label>Solution / Repair Detail</label>
+            {{ form.solution_detail }}
+            {{ form.solution_detail.errors }}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          {% if mode == 'entry' %}Log Intake{% else %}Save & Close Ticket{% endif %}
+        </button>
+        <a href="{% if mode == 'exit' %}{% url 'repair_detail' job.pk %}{% else %}{% url 'repair_list' %}{% endif %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
