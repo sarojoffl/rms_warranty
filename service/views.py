@@ -56,11 +56,11 @@ class RoleAwareLoginView(auth_views.LoginView):
     """Send users to the dashboard that matches their granted access."""
 
     def get_success_url(self):
+        if is_management_user(self.request.user):
+            return reverse("management_dashboard")
         redirect_to = self.get_redirect_url()
         if redirect_to:
             return redirect_to
-        if is_management_user(self.request.user):
-            return reverse("management_dashboard")
         return reverse("dashboard")
 
 

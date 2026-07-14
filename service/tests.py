@@ -164,6 +164,17 @@ class TicketFormValidationTests(TestCase):
             fetch_redirect_response=False,
         )
 
+        self.client.logout()
+        management_login_with_next = self.client.post(
+            f"{reverse('login')}?next={reverse('repair_list')}",
+            {"username": management_user.username, "password": "test-password"},
+        )
+        self.assertRedirects(
+            management_login_with_next,
+            reverse("management_dashboard"),
+            fetch_redirect_response=False,
+        )
+
     @override_settings(
         STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
     )
