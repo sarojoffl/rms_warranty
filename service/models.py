@@ -1,5 +1,7 @@
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Max
+from django.urls import reverse
 
 
 # ---------------------------------------------------------------------------
@@ -162,3 +164,21 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.job_number}: {self.action}"
+
+    def get_detail_url(self):
+        """Return the absolute URL of the repair or warranty ticket this log refers to.
+        Returns None if the job can no longer be found."""
+        try:
+            if self.area == self.Area.REPAIR:
+                from .models import RepairJob  # avoid circular at module level
+                pk = RepairJob.objects.filter(job_number=self.job_number).values_list("pk", flat=True).first()
+                if pk:
+                    return reverse("repair_detail", args=[pk])
+            elif self.area == self.Area.WARRANTY:
+                from .models import WarrantyClaim
+                pk = WarrantyClaim.objects.filter(job_number=self.job_number).values_list("pk", flat=True).first()
+                if pk:
+                    return reverse("warranty_detail", args=[pk])
+        except Exception:
+            pass
+        return None

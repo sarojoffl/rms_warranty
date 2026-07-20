@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Client, Machine, RepairJob, WarrantyClaim
+from .models import ActivityLog, Client, Machine, RepairJob, WarrantyClaim
 
 
 @admin.register(Client)
@@ -30,3 +30,5 @@ class WarrantyClaimAdmin(admin.ModelAdmin):
     list_filter = ("claimable", "solved", "report_complete")
     search_fields = ("job_number", "sold_to__name", "machine__serial_number")
     readonly_fields = ("job_number",)
+
+admin.site.register(ActivityLog)

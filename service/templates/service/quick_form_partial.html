@@ -1,0 +1,17 @@
+<form method="post" novalidate id="modal-form">
+  {% csrf_token %}
+  <div class="form-grid">
+    {% for field in form %}
+      <div class="form-group {% if field.name == 'details' or field.name == 'address' %}full{% endif %}" id="field-{{ field.name }}">
+        <label>{{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}</label>
+        {{ field }}
+        {{ field.errors }}
+        {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="button" class="btn btn-outline modal-close-btn">Cancel</button>
+  </div>
+</form>

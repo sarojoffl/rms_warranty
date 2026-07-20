@@ -1,0 +1,161 @@
+{% extends "service/base.html" %}
+{% block page_title %}Search Results{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Universal Search</span>
+    <h2>Results for "{{ query }}"</h2>
+  </div>
+</div>
+
+<div class="search-results-container">
+  {% if not clients and not machines and not repairs and not claims %}
+    <div class="card">
+      <div class="card-body">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </div>
+          <strong>No matching records found</strong>
+          <p>Try searching for a different keyword, name, serial number, or ticket code.</p>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    
+    {% if clients %}
+      <section class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h3>Clients ({{ clients|length }})</h3>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Company</th>
+                <th>Phone</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for client in clients %}
+                <tr>
+                  <td><strong>{{ client.name }}</strong></td>
+                  <td>{{ client.company_name|default:"—" }}</td>
+                  <td>{{ client.phone|default:"—" }}</td>
+                  <td>{{ client.address|default:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+    {% if machines %}
+      <section class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h3>Machines ({{ machines|length }})</h3>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Machine Type</th>
+                <th>Brand / Model</th>
+                <th>Serial Number</th>
+                <th>Owner (Client)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for machine in machines %}
+                <tr>
+                  <td><span class="job-num">{{ machine.machine_type }}</span></td>
+                  <td>{{ machine.brand }} {{ machine.model_name }}</td>
+                  <td class="mono">{{ machine.serial_number|default:"—" }}</td>
+                  <td>{{ machine.client.name }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+    {% if repairs %}
+      <section class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h3>Repair Jobs ({{ repairs|length }})</h3>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Job Number</th>
+                <th>Client</th>
+                <th>Machine</th>
+                <th>Date In</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in repairs %}
+                <tr>
+                  <td><a href="{% url 'repair_detail' job.pk %}" class="job-num">{{ job.job_number }}</a></td>
+                  <td>{{ job.client.name }}</td>
+                  <td>{{ job.machine }}</td>
+                  <td>{{ job.date_in }}</td>
+                  <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+    {% if claims %}
+      <section class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h3>Warranty Claims ({{ claims|length }})</h3>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Job Number</th>
+                <th>Client</th>
+                <th>Machine</th>
+                <th>Date In</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for claim in claims %}
+                <tr>
+                  <td><a href="{% url 'warranty_detail' claim.pk %}" class="job-num">{{ claim.job_number }}</a></td>
+                  <td>{{ claim.sold_to.name }}</td>
+                  <td>{{ claim.machine }}</td>
+                  <td>{{ claim.date_in }}</td>
+                  <td>
+                    {% if claim.solved %}
+                      <span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>
+                    {% else %}
+                      <span class="stamp neutral">Open</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

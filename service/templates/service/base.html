@@ -6,7 +6,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Service Desk — Global Link Technology{% endblock %}</title>
+<title>{% block title %}Service Desk — Global Link Technology Pvt. Ltd.{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <span class="brand-name">Global Link</span>
+      <span class="brand-name">Global Link Technology</span>
       <span class="brand-sub">Service Desk</span>
     </div>
     <nav class="sidebar-nav">
@@ -56,7 +56,14 @@
         <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
         <h1>{% block page_title %}Service Desk{% endblock %}</h1>
       </div>
+      
       <div class="topbar-right">
+        <form action="{% url 'global_search' %}" method="get" class="topbar-search">
+          <input type="search" name="q" placeholder="Search ticket, serial, client..." required value="{{ query }}">
+          <button type="submit" aria-label="Search">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+        </form>
         <span class="topbar-date">{% now "l, j F Y" %}</span>
         {% if request.user.is_authenticated %}
         <span class="user-chip">
@@ -95,6 +102,19 @@
 
   </div>
 </div>
+<!-- Quick Add Modal -->
+<div id="quick-add-modal" class="modal-backdrop" style="display: none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modal-title">Quick Add</h3>
+      <button type="button" class="modal-close" id="modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body-content">
+      <!-- AJAX form loaded here -->
+    </div>
+  </div>
+</div>
+
 <script src="{% static 'js/main.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>

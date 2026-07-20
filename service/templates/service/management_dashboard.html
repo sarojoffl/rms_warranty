@@ -10,50 +10,266 @@
   <span class="dashboard-period">Month to {{ today|date:"j M Y" }}</span>
 </div>
 
+{% if delayed_repairs %}
+<div class="delayed-alert" role="alert">
+  <div class="alert-content">
+    <svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <div>
+      <span style="font-weight:800; color:var(--color-danger-text); display:block; font-size:0.95rem;">Attention Required: {{ delayed_repairs|length }} Repair Job(s) pending for more than 3 days!</span>
+      <div class="delayed-list-small">
+        {% for job in delayed_repairs %}
+          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client.name }} — {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <section class="stat-strip management-stats" aria-label="Monthly repair performance">
   <div class="stat-card">
+    <div class="icon-box">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+      </svg>
+    </div>
     <span class="stat-label">Repairs received</span>
     <span class="stat-value">{{ repairs_received_month }}</span>
     <span class="stat-note">since {{ month_start|date:"j M" }}</span>
   </div>
+  
   <div class="stat-card success">
+    <div class="icon-box" style="background:var(--color-success-bg); color:var(--color-success);">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
     <span class="stat-label">Repairs completed</span>
     <span class="stat-value">{{ repairs_completed_month }}</span>
-    <span class="stat-note">this month</span>
+    <div class="progress-container">
+      <div class="progress-label-row">
+        <span>Completion Rate</span>
+        <span>{{ completion_rate }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar success" style="width: {{ completion_rate }}%;"></div>
+      </div>
+    </div>
   </div>
-  <div class="stat-card amber">
-    <span class="stat-label">Current repair backlog</span>
+  
+  <div class="stat-card {% if delayed_repairs %}amber{% endif %}">
+    <div class="icon-box" style="{% if delayed_repairs %}background:var(--color-amber-bg); color:var(--color-amber);{% endif %}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <span class="stat-label">Current backlog</span>
     <span class="stat-value">{{ repair_backlog }}</span>
-    <span class="stat-note">tickets still open</span>
+    <span class="stat-note">
+      {% if delayed_repairs %}
+        <strong style="color:var(--color-danger-text);">{{ delayed_repairs|length }} delayed (>3 days)</strong>
+      {% else %}
+        All caught up
+      {% endif %}
+    </span>
+  </div>
+</section>
+
+<!-- Visual Analytics Charts -->
+<section class="dashboard-grid" style="margin-bottom: 24px;">
+  <div class="card">
+    <div class="card-header">
+      <h3>Service Intake Trends (Last 7 Days)</h3>
+    </div>
+    <div class="card-body" style="height: 280px; position: relative;">
+      <canvas id="intakesChart"></canvas>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <h3>Asset Distribution by Type</h3>
+    </div>
+    <div class="card-body" style="height: 280px; position: relative;">
+      <canvas id="assetsChart"></canvas>
+    </div>
   </div>
 </section>
 
 <div class="dashboard-grid">
   <section class="card metric-panel">
-    <div class="card-header"><h3>Service Efficiency</h3></div>
+    <div class="card-header">
+      <h3>Service Efficiency</h3>
+    </div>
     <dl class="metric-list">
-      <div><dt>Average repair turnaround</dt><dd>{% if average_turnaround is not None %}{{ average_turnaround }} days{% else %}—{% endif %}</dd></div>
-      <div><dt>Repair intakes, last 30 days</dt><dd>{{ repairs_last_30_days }}</dd></div>
-      <div><dt>Open repair tickets</dt><dd>{{ repair_backlog }}</dd></div>
+      <div>
+        <dt>Average repair turnaround</dt>
+        <dd>{% if average_turnaround is not None %}{{ average_turnaround }} days{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt>Repair intakes (last 30 days)</dt>
+        <dd>{{ repairs_last_30_days }}</dd>
+      </div>
+      <div>
+        <dt>Open repair tickets</dt>
+        <dd>{{ repair_backlog }}</dd>
+      </div>
     </dl>
   </section>
+  
   <section class="card metric-panel">
-    <div class="card-header"><h3>Warranty Overview</h3></div>
+    <div class="card-header">
+      <h3>Warranty Overview</h3>
+    </div>
     <dl class="metric-list">
-      <div><dt>Claims received this month</dt><dd>{{ claims_received_month }}</dd></div>
-      <div><dt>Claimable this month</dt><dd>{{ claims_claimable_month }}</dd></div>
-      <div><dt>Claims still open</dt><dd>{{ claims_open }}</dd></div>
-      <div><dt>Claims received, last 30 days</dt><dd>{{ claims_last_30_days }}</dd></div>
+      <div>
+        <dt>Claims received this month</dt>
+        <dd>{{ claims_received_month }}</dd>
+      </div>
+      <div>
+        <dt>Claimable this month</dt>
+        <dd>{{ claims_claimable_month }}</dd>
+      </div>
+      <div>
+        <dt>Claims still open</dt>
+        <dd>{{ claims_open }}</dd>
+      </div>
+      <div>
+        <dt>Claims received (last 30 days)</dt>
+        <dd>{{ claims_last_30_days }}</dd>
+      </div>
     </dl>
   </section>
 </div>
 
-<section class="card management-logs-preview">
-  <div class="card-header"><h3>Recent Activity</h3><a href="{% url 'management_logs' %}" class="btn btn-outline btn-sm">View all logs</a></div>
+<section class="card management-logs-preview" style="margin-top: 24px;">
+  <div class="card-header">
+    <h3>Recent Activity</h3>
+    <a href="{% url 'management_logs' %}" class="btn btn-outline btn-sm">View all logs</a>
+  </div>
   <div class="activity-list">
     {% for log in recent_logs %}
-    <div class="activity-item"><div><span class="job-num">{{ log.job_number }}</span><span class="activity-detail">{{ log.action }}{% if log.actor %} · {{ log.actor.username }}{% endif %}{% if log.details %} · {{ log.details }}{% endif %}</span></div><span class="stamp neutral">{{ log.created_at|date:"j M, H:i" }}</span></div>
-    {% empty %}<div class="empty-state compact"><strong>No activity logged yet</strong><p>New ticket actions will appear here.</p></div>{% endfor %}
+    <div class="activity-item">
+      <div>
+        {% with url=log.get_detail_url %}
+          {% if url %}
+            <a href="{{ url }}" class="job-num link-primary">{{ log.job_number }}</a>
+          {% else %}
+            <span class="job-num">{{ log.job_number }}</span>
+          {% endif %}
+        {% endwith %}
+        <span class="activity-detail">{{ log.action }}{% if log.actor %} · {{ log.actor.username }}{% endif %}{% if log.details %} · {{ log.details }}{% endif %}</span>
+      </div>
+      <span class="stamp neutral">{{ log.created_at|date:"j M, H:i" }}</span>
+    </div>
+    {% empty %}
+    <div class="empty-state compact">
+      <strong>No activity logged yet</strong>
+      <p>New ticket actions will appear here.</p>
+    </div>
+    {% endfor %}
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="chart-data" type="application/json">{{ chart_json|safe }}</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var chartDataEl = document.getElementById('chart-data');
+    if (!chartDataEl) return;
+    var data = JSON.parse(chartDataEl.textContent);
+
+    // Chart 1: Intakes Trend
+    var ctx1 = document.getElementById('intakesChart').getContext('2d');
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            label: 'Repair Jobs',
+            data: data.repairs,
+            borderColor: '#0091b3',
+            backgroundColor: 'rgba(0, 145, 179, 0.06)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          },
+          {
+            label: 'Warranty Claims',
+            data: data.claims,
+            borderColor: '#8b3fd1',
+            backgroundColor: 'rgba(139, 63, 209, 0.06)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { family: 'Plus Jakarta Sans', weight: '600', size: 12 },
+              color: '#51596b'
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, color: '#76809a', font: { family: 'Plus Jakarta Sans' } },
+            grid: { color: 'rgba(16, 21, 34, 0.04)' }
+          },
+          x: {
+            ticks: { color: '#76809a', font: { family: 'Plus Jakarta Sans' } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    // Chart 2: Asset breakdown
+    var ctx2 = document.getElementById('assetsChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: data.machine_labels,
+        datasets: [{
+          data: data.machine_counts,
+          backgroundColor: [
+            '#0091b3',
+            '#0066cc',
+            '#8b3fd1',
+            '#0a9450',
+            '#b35f00'
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              font: { family: 'Plus Jakarta Sans', weight: '600', size: 11 },
+              color: '#51596b',
+              boxWidth: 12
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+  });
+</script>
 {% endblock %}

@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt — {{ job.job_number }}</title>
+<style>
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11.5px;
+    width: 72mm;
+    margin: 0 auto;
+    padding: 10px 0;
+    color: #000;
+  }
+  .text-center { text-align: center; }
+  .bold { font-weight: bold; }
+  .header {
+    margin-bottom: 12px;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 8px;
+  }
+  .store-title {
+    font-size: 15px;
+    margin: 0 0 4px 0;
+  }
+  .receipt-title {
+    font-size: 13px;
+    margin: 8px 0;
+    text-transform: uppercase;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+  td {
+    padding: 2.5px 0;
+    vertical-align: top;
+  }
+  .label {
+    width: 38%;
+  }
+  .separator {
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+  }
+  .footer {
+    margin-top: 20px;
+    border-top: 1px dashed #000;
+    padding-top: 8px;
+    font-size: 9.5px;
+  }
+  .signature-block {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .sig-line {
+    border-top: 1px solid #000;
+    width: 44%;
+    text-align: center;
+    padding-top: 4px;
+    font-size: 8.5px;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body onload="window.print();">
+  <div class="header text-center">
+    <h1 class="store-title bold">GLOBAL LINK</h1>
+    <div>Technology Pvt. Ltd.</div>
+    <div>Manbhawan Road, Lalitpur</div>
+    <div>Phone: 9851402916</div>
+    <h2 class="receipt-title bold">Intake Receipt</h2>
+  </div>
+
+  <table>
+    <tr>
+      <td class="label bold">Job Number:</td>
+      <td class="bold">{{ job.job_number }}</td>
+    </tr>
+    <tr>
+      <td class="label">Date In:</td>
+      <td>{{ job.date_in }}</td>
+    </tr>
+    <tr>
+      <td class="label">Received By:</td>
+      <td>{{ job.received_by }}</td>
+    </tr>
+  </table>
+
+  <div class="separator"></div>
+
+  <div class="bold" style="margin-bottom: 3px;">CLIENT DETAILS:</div>
+  <table>
+    <tr>
+      <td class="label">Name:</td>
+      <td>{{ job.client.name }}</td>
+    </tr>
+    {% if job.client.company_name %}
+    <tr>
+      <td class="label">Company:</td>
+      <td>{{ job.client.company_name }}</td>
+    </tr>
+    {% endif %}
+    {% if job.client.phone %}
+    <tr>
+      <td class="label">Phone:</td>
+      <td>{{ job.client.phone }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <div class="separator"></div>
+
+  <div class="bold" style="margin-bottom: 3px;">ASSET DETAILS:</div>
+  <table>
+    <tr>
+      <td class="label">Machine:</td>
+      <td>{{ job.machine.machine_type }}</td>
+    </tr>
+    <tr>
+      <td class="label">Model:</td>
+      <td>{{ job.machine.brand }} {{ job.machine.model_name }}</td>
+    </tr>
+    {% if job.machine.serial_number %}
+    <tr>
+      <td class="label">Serial No:</td>
+      <td>{{ job.machine.serial_number }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <div class="separator"></div>
+
+  <div class="bold" style="margin-bottom: 4px;">PROBLEM REPORTED:</div>
+  <div style="line-height: 1.35; white-space: pre-wrap;">{{ job.problem_cause }}</div>
+
+  <div class="signature-block">
+    <div class="sig-line">Client Signature</div>
+    <div class="sig-line">Staff Signature</div>
+  </div>
+
+  <div class="footer text-center">
+    <p>Thank you for choosing Global Link Technology Pvt. Ltd.</p>
+    <p>Please bring this copy during collection.</p>
+  </div>
+</body>
+</html>

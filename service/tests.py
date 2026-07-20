@@ -188,3 +188,58 @@ class TicketFormValidationTests(TestCase):
 
         response = self.client.get(reverse("repair_create"))
         self.assertRedirects(response, reverse("management_dashboard"), fetch_redirect_response=False)
+
+    def test_ajax_client_create_returns_json_on_success(self):
+        user = get_user_model().objects.create_user(username="staff-ajax", password="test-password")
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("client_create"),
+            {"name": "New AJAX Client", "phone": "123456789"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "success")
+        self.assertIn("id", response.json())
+        self.assertEqual(response.json()["name"], "New AJAX Client")
+
+    def test_ajax_client_create_returns_json_errors_on_invalid(self):
+        user = get_user_model().objects.create_user(username="staff-ajax-err", password="test-password")
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("client_create"),
+            {"name": ""},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "error")
+        self.assertIn("html", response.json())
+        self.assertIn("This field is required", response.json()["html"])
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_new_routes_return_ok_for_logged_in_staff(self):
+        user = get_user_model().objects.create_user(username="staff-routes", password="test-password")
+        self.client.force_login(user)
+        
+        # Test global search
+        response = self.client.get(reverse("global_search"), {"q": "test"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Results for \"test\"")
+        
+        # Test receipts
+        job = RepairJob.objects.create(
+            date_in=date.today(), client=self.client_a, received_by="Asha",
+            machine=self.machine, problem_cause="Will not power on",
+        )
+        response = self.client.get(reverse("repair_receipt", args=[job.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Intake Receipt")
+        
+        claim = WarrantyClaim.objects.create(
+            date_in=date.today(), received_by="Asha", sold_to=self.client_a,
+            machine=self.machine,
+        )
+        response = self.client.get(reverse("warranty_receipt", args=[claim.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Warranty Claim Slip")

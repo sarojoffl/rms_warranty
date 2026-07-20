@@ -6,6 +6,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from .forms import (
@@ -92,14 +93,30 @@ def _safe_next(request, fallback):
 
 @login_required
 def client_create(request):
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     if request.method == "POST":
         form = ClientForm(request.POST)
         if form.is_valid():
             client = form.save()
+            if is_ajax:
+                return JsonResponse({"status": "success", "id": client.pk, "name": str(client)})
             messages.success(request, f"Client '{client.name}' added.")
             return redirect(_safe_next(request, "repair_create"))
+        else:
+            if is_ajax:
+                html = render_to_string("service/quick_form_partial.html", {
+                    "form": form, "title": "New Client",
+                }, request=request)
+                return JsonResponse({"status": "error", "html": html})
     else:
         form = ClientForm()
+    
+    if is_ajax:
+        html = render_to_string("service/quick_form_partial.html", {
+            "form": form, "title": "New Client",
+        }, request=request)
+        return JsonResponse({"status": "success", "html": html})
+        
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Client",
         "next": request.GET.get("next", ""),
@@ -108,14 +125,39 @@ def client_create(request):
 
 @login_required
 def machine_create(request):
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    client_id = request.GET.get("client_id") or request.POST.get("client")
     if request.method == "POST":
         form = MachineForm(request.POST)
         if form.is_valid():
             machine = form.save()
+            if is_ajax:
+                return JsonResponse({
+                    "status": "success",
+                    "id": machine.pk,
+                    "name": str(machine),
+                    "client_id": machine.client.id
+                })
             messages.success(request, f"Machine added for {machine.client.name}.")
             return redirect(_safe_next(request, "repair_create"))
+        else:
+            if is_ajax:
+                html = render_to_string("service/quick_form_partial.html", {
+                    "form": form, "title": "New Machine",
+                }, request=request)
+                return JsonResponse({"status": "error", "html": html})
     else:
-        form = MachineForm()
+        initial = {}
+        if client_id:
+            initial["client"] = client_id
+        form = MachineForm(initial=initial)
+        
+    if is_ajax:
+        html = render_to_string("service/quick_form_partial.html", {
+            "form": form, "title": "New Machine",
+        }, request=request)
+        return JsonResponse({"status": "success", "html": html})
+        
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Machine",
         "next": request.GET.get("next", ""),
@@ -131,6 +173,13 @@ def dashboard(request):
     """Operational overview for staff at the start of a service-desk shift."""
     repairs = RepairJob.objects.select_related("client", "machine")
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
+    
+    three_days_ago = date.today() - timedelta(days=3)
+    delayed_repairs = RepairJob.objects.filter(
+        status=RepairJob.Status.PENDING,
+        date_in__lte=three_days_ago
+    ).select_related("client", "machine")
+
     return render(request, "service/dashboard.html", {
         "client_count": Client.objects.count(),
         "machine_count": Machine.objects.count(),
@@ -141,12 +190,16 @@ def dashboard(request):
         "claim_review": claims.filter(claimable="").count(),
         "recent_repairs": repairs[:5],
         "recent_claims": claims[:5],
+        "delayed_repairs": delayed_repairs,
     })
 
 
 @management_required
 def management_dashboard(request):
     """Read-only KPI overview for management users."""
+    import json
+    from django.db.models import Count
+
     today = date.today()
     month_start = today.replace(day=1)
     period_start = today - timedelta(days=30)
@@ -162,12 +215,46 @@ def management_dashboard(request):
         if job.date_out
     ]
 
+    three_days_ago = today - timedelta(days=3)
+    delayed_repairs = RepairJob.objects.filter(
+        status=RepairJob.Status.PENDING,
+        date_in__lte=three_days_ago
+    ).select_related("client", "machine")
+
+    repairs_received_month = repairs.filter(date_in__gte=month_start).count()
+    repairs_completed_month = completed_this_month.count()
+    completion_rate = int((repairs_completed_month / repairs_received_month) * 100) if repairs_received_month > 0 else 0
+
+    # Chart 1: Last 7 days intake trend
+    chart_days = []
+    chart_repairs = []
+    chart_claims = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        chart_days.append(day.strftime("%b %d"))
+        chart_repairs.append(repairs.filter(date_in=day).count())
+        chart_claims.append(claims.filter(date_in=day).count())
+
+    # Chart 2: Asset breakdown
+    machine_types_data = list(Machine.objects.values('machine_type').annotate(count=Count('id')).order_by('-count')[:5])
+    chart_machine_types = [item['machine_type'] for item in machine_types_data]
+    chart_machine_counts = [item['count'] for item in machine_types_data]
+
+    chart_json = json.dumps({
+        "labels": chart_days,
+        "repairs": chart_repairs,
+        "claims": chart_claims,
+        "machine_labels": chart_machine_types,
+        "machine_counts": chart_machine_counts,
+    })
+
     return render(request, "service/management_dashboard.html", {
         "month_start": month_start,
         "today": today,
-        "repairs_received_month": repairs.filter(date_in__gte=month_start).count(),
-        "repairs_completed_month": completed_this_month.count(),
+        "repairs_received_month": repairs_received_month,
+        "repairs_completed_month": repairs_completed_month,
         "repair_backlog": repairs.filter(status=RepairJob.Status.PENDING).count(),
+        "completion_rate": completion_rate,
         "average_turnaround": round(sum(turnaround_days) / len(turnaround_days), 1) if turnaround_days else None,
         "claims_received_month": claims.filter(date_in__gte=month_start).count(),
         "claims_claimable_month": claims.filter(
@@ -178,6 +265,8 @@ def management_dashboard(request):
         "repairs_last_30_days": repairs.filter(date_in__gte=period_start).count(),
         "claims_last_30_days": claims.filter(date_in__gte=period_start).count(),
         "recent_logs": ActivityLog.objects.select_related("actor")[:6],
+        "delayed_repairs": delayed_repairs,
+        "chart_json": chart_json,
     })
 
 
@@ -336,3 +425,58 @@ def warranty_export_pdf(request, pk):
         subtitle=f"Generated on {date.today()}",
         field_rows=rows,
     )
+
+
+@login_required
+def global_search(request):
+    from django.db.models import Q
+    query = request.GET.get("q", "").strip()
+    clients = []
+    machines = []
+    repairs = []
+    claims = []
+    
+    if query:
+        clients = Client.objects.filter(
+            Q(name__icontains=query) |
+            Q(company_name__icontains=query) |
+            Q(phone__icontains=query)
+        )
+        machines = Machine.objects.filter(
+            Q(machine_type__icontains=query) |
+            Q(brand__icontains=query) |
+            Q(model_name__icontains=query) |
+            Q(serial_number__icontains=query)
+        ).select_related("client")
+        repairs = RepairJob.objects.filter(
+            Q(job_number__icontains=query) |
+            Q(problem_cause__icontains=query) |
+            Q(client__name__icontains=query) |
+            Q(received_by__icontains=query)
+        ).select_related("client", "machine")
+        claims = WarrantyClaim.objects.filter(
+            Q(job_number__icontains=query) |
+            Q(sold_to__name__icontains=query) |
+            Q(bought_from__icontains=query) |
+            Q(received_by__icontains=query)
+        ).select_related("sold_to", "machine")
+        
+    return render(request, "service/search_results.html", {
+        "query": query,
+        "clients": clients,
+        "machines": machines,
+        "repairs": repairs,
+        "claims": claims,
+    })
+
+
+@login_required
+def repair_receipt(request, pk):
+    job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
+    return render(request, "service/repair_receipt.html", {"job": job})
+
+
+@login_required
+def warranty_receipt(request, pk):
+    claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
+    return render(request, "service/warranty_receipt.html", {"claim": claim})

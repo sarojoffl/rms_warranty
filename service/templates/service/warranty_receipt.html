@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt — {{ claim.job_number }}</title>
+<style>
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11.5px;
+    width: 72mm;
+    margin: 0 auto;
+    padding: 10px 0;
+    color: #000;
+  }
+  .text-center { text-align: center; }
+  .bold { font-weight: bold; }
+  .header {
+    margin-bottom: 12px;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 8px;
+  }
+  .store-title {
+    font-size: 15px;
+    margin: 0 0 4px 0;
+  }
+  .receipt-title {
+    font-size: 13px;
+    margin: 8px 0;
+    text-transform: uppercase;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+  td {
+    padding: 2.5px 0;
+    vertical-align: top;
+  }
+  .label {
+    width: 38%;
+  }
+  .separator {
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+  }
+  .footer {
+    margin-top: 20px;
+    border-top: 1px dashed #000;
+    padding-top: 8px;
+    font-size: 9.5px;
+  }
+  .signature-block {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .sig-line {
+    border-top: 1px solid #000;
+    width: 44%;
+    text-align: center;
+    padding-top: 4px;
+    font-size: 8.5px;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body onload="window.print();">
+  <div class="header text-center">
+    <h1 class="store-title bold">GLOBAL LINK</h1>
+    <div>Technology Pvt. Ltd.</div>
+    <div>Manbhawan Road, Lalitpur</div>
+    <div>Phone: 9851402916</div>
+    <h2 class="receipt-title bold">Warranty Claim Slip</h2>
+  </div>
+
+  <table>
+    <tr>
+      <td class="label bold">Claim No:</td>
+      <td class="bold">{{ claim.job_number }}</td>
+    </tr>
+    <tr>
+      <td class="label">Date In:</td>
+      <td>{{ claim.date_in }}</td>
+    </tr>
+    <tr>
+      <td class="label">Received By:</td>
+      <td>{{ claim.received_by }}</td>
+    </tr>
+  </table>
+
+  <div class="separator"></div>
+
+  <div class="bold" style="margin-bottom: 3px;">CLIENT DETAILS:</div>
+  <table>
+    <tr>
+      <td class="label">Sold To:</td>
+      <td>{{ claim.sold_to.name }}</td>
+    </tr>
+    {% if claim.sold_to.company_name %}
+    <tr>
+      <td class="label">Company:</td>
+      <td>{{ claim.sold_to.company_name }}</td>
+    </tr>
+    {% endif %}
+    {% if claim.bought_from %}
+    <tr>
+      <td class="label">Bought From:</td>
+      <td>{{ claim.bought_from }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <div class="separator"></div>
+
+  <div class="bold" style="margin-bottom: 3px;">ASSET DETAILS:</div>
+  <table>
+    <tr>
+      <td class="label">Machine:</td>
+      <td>{{ claim.machine.machine_type }}</td>
+    </tr>
+    <tr>
+      <td class="label">Model:</td>
+      <td>{{ claim.machine.brand }} {{ claim.machine.model_name }}</td>
+    </tr>
+    {% if claim.machine.serial_number %}
+    <tr>
+      <td class="label">Serial No:</td>
+      <td>{{ claim.machine.serial_number }}</td>
+    </tr>
+    {% endif %}
+    {% if claim.warranty_sent_date %}
+    <tr>
+      <td class="label">Sent Date:</td>
+      <td>{{ claim.warranty_sent_date }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {% if claim.report_warranty_claimed %}
+  <div class="separator"></div>
+  <div class="bold" style="margin-bottom: 4px;">CLAIM REPORT:</div>
+  <div style="line-height: 1.35; white-space: pre-wrap;">{{ claim.report_warranty_claimed }}</div>
+  {% endif %}
+
+  <div class="signature-block">
+    <div class="sig-line">Client Signature</div>
+    <div class="sig-line">Staff Signature</div>
+  </div>
+
+  <div class="footer text-center">
+    <p>Thank you for choosing Global Link Technology Pvt. Ltd.</p>
+    <p>Claims are subject to manufacturer verification.</p>
+  </div>
+</body>
+</html>

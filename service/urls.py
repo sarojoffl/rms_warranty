@@ -18,6 +18,7 @@ urlpatterns = [
     path("repair/<int:pk>/", views.repair_detail, name="repair_detail"),
     path("repair/<int:pk>/exit/", views.helpdesk_required(views.repair_exit), name="repair_exit"),
     path("repair/<int:pk>/pdf/", views.repair_export_pdf, name="repair_export_pdf"),
+    path("repair/<int:pk>/receipt/", views.repair_receipt, name="repair_receipt"),
 
     # Warranty
     path("warranty/", views.warranty_list, name="warranty_list"),
@@ -25,4 +26,8 @@ urlpatterns = [
     path("warranty/<int:pk>/", views.warranty_detail, name="warranty_detail"),
     path("warranty/<int:pk>/exit/", views.helpdesk_required(views.warranty_exit), name="warranty_exit"),
     path("warranty/<int:pk>/pdf/", views.warranty_export_pdf, name="warranty_export_pdf"),
+    path("warranty/<int:pk>/receipt/", views.warranty_receipt, name="warranty_receipt"),
+    
+    # Universal Search
+    path("search/", views.global_search, name="global_search"),
 ]

@@ -60,7 +60,11 @@
   <div class="ticket-foot">
     <a href="{% url 'warranty_export_pdf' claim.pk %}" class="btn btn-outline">
       <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Print / Export PDF
+      Print PDF
+    </a>
+    <a href="{% url 'warranty_receipt' claim.pk %}" target="_blank" class="btn btn-outline">
+      <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M16 20H8v-4h8v4zM8 4V2h8v2"/></svg>
+      Thermal Receipt
     </a>
     {% if not management_user and not claim.solved %}
       <a href="{% url 'warranty_exit' claim.pk %}" class="btn btn-success">Complete Exit Ticket</a>

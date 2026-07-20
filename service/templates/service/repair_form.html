@@ -35,7 +35,7 @@
             <label>Client <span class="req">*</span></label>
             {{ form.client }}
             {{ form.client.errors }}
-            <span class="help-text"><a href="{% url 'client_create' %}?next={{ request.path }}">+ New Client</a></span>
+            <span class="help-text"><a href="{% url 'client_create' %}" class="quick-add-link" data-modal-title="New Client" data-target-select="#id_client">+ New Client</a></span>
           </div>
           <div class="form-group">
             <label>Received By <span class="req">*</span></label>
@@ -46,7 +46,7 @@
             <label>Machine <span class="req">*</span></label>
             <div class="machine-select" data-machine-options-url="{% url 'machine_options' %}">{{ form.machine }}</div>
             {{ form.machine.errors }}
-            <span class="help-text"><a href="{% url 'machine_create' %}?next={{ request.path }}">+ New Machine</a></span>
+            <span class="help-text"><a href="{% url 'machine_create' %}" class="quick-add-link" data-modal-title="New Machine" data-needs-client="true" data-target-select="#id_machine">+ New Machine</a></span>
           </div>
           <div class="form-group full">
             <label>Problem / Cause <span class="req">*</span></label>
