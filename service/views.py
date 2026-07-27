@@ -337,6 +337,8 @@ def repair_export_pdf(request, pk):
         ("Serial Number", job.machine.serial_number),
         ("Problem / Cause", job.problem_cause),
         ("Date Out", job.date_out),
+        ("Repaired By", job.repaired_by),
+        ("Challan Number", job.challan_number),
         ("Solution / Repair Detail", job.solution_detail),
         ("Taken By", job.taken_by),
     ]

@@ -44,12 +44,16 @@ class TicketFormValidationTests(TestCase):
             "date_out": "",
             "solution_detail": "",
             "taken_by": "",
+            "challan_number": "",
+            "repaired_by": "",
             "status": RepairJob.Status.COMPLETED,
         }, instance=job)
         self.assertFalse(form.is_valid())
         self.assertIn("date_out", form.errors)
         self.assertIn("solution_detail", form.errors)
         self.assertIn("taken_by", form.errors)
+        self.assertIn("challan_number", form.errors)
+        self.assertIn("repaired_by", form.errors)
 
     def test_repair_exit_date_cannot_precede_intake(self):
         job = RepairJob.objects.create(
@@ -60,6 +64,8 @@ class TicketFormValidationTests(TestCase):
             "date_out": date.today() - timedelta(days=1),
             "solution_detail": "Replaced power supply",
             "taken_by": "Asha",
+            "repaired_by": "Rohan",
+            "challan_number": "CH-123",
             "status": RepairJob.Status.COMPLETED,
         }, instance=job)
         self.assertFalse(form.is_valid())

@@ -67,12 +67,23 @@
             {{ form.status.errors }}
           </div>
           <div class="form-group">
+            <label>Repaired By <span class="req">*</span></label>
+            {{ form.repaired_by }}
+            {{ form.repaired_by.errors }}
+          </div>
+          <div class="form-group">
             <label>Taken By</label>
             {{ form.taken_by }}
             {{ form.taken_by.errors }}
           </div>
+          <div class="form-group">
+            <label>Challan Number <span class="req">*</span></label>
+            {{ form.challan_number }}
+            {{ form.challan_number.errors }}
+            <span class="help-text">Required before item can be exited</span>
+          </div>
           <div class="form-group full">
-            <label>Solution / Repair Detail</label>
+            <label>Solution / Repair Detail <span class="req">*</span></label>
             {{ form.solution_detail }}
             {{ form.solution_detail.errors }}
           </div>

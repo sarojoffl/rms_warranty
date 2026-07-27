@@ -78,8 +78,13 @@ class RepairJob(models.Model):
 
     # --- Exit form (filled later; other details auto-fill from above) ---
     date_out = models.DateField(null=True, blank=True)
+    repaired_by = models.CharField(max_length=150, blank=True, help_text="Technician who repaired the machine")
     solution_detail = models.TextField(blank=True)
     taken_by = models.CharField(max_length=150, blank=True, help_text="Who collected the machine")
+    challan_number = models.CharField(
+        max_length=100, blank=True,
+        help_text="Challan / delivery note number — required before exit"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

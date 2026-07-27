@@ -47,28 +47,45 @@ class RepairJobEntryForm(forms.ModelForm):
 class RepairJobExitForm(forms.ModelForm):
     class Meta:
         model = RepairJob
-        fields = ["date_out", "solution_detail", "taken_by", "status"]
+        fields = ["date_out", "repaired_by", "challan_number", "solution_detail", "taken_by", "status"]
         widgets = {
             "date_out": forms.DateInput(attrs={"type": "date"}),
             "solution_detail": forms.Textarea(attrs={"rows": 4}),
+            "challan_number": forms.TextInput(attrs={"placeholder": "e.g. CH-2081-0042"}),
+            "repaired_by": forms.TextInput(attrs={"placeholder": "Technician name"}),
+        }
+        labels = {
+            "challan_number": "Challan Number",
+            "repaired_by": "Repaired By",
+            "solution_detail": "Solution / Repair Detail",
         }
 
     def clean(self):
         cleaned = super().clean()
         date_out = cleaned.get("date_out")
         status = cleaned.get("status")
-        solution_detail = cleaned.get("solution_detail")
-        taken_by = cleaned.get("taken_by")
+        solution_detail = cleaned.get("solution_detail", "").strip()
+        taken_by = cleaned.get("taken_by", "").strip()
+        challan_number = cleaned.get("challan_number", "").strip()
+        repaired_by = cleaned.get("repaired_by", "").strip()
 
         if date_out and self.instance.date_in and date_out < self.instance.date_in:
             self.add_error("date_out", "Date out cannot be before the intake date.")
+
+        # Always required on exit
+        if not repaired_by:
+            self.add_error("repaired_by", "Repaired By is required.")
+        if not solution_detail:
+            self.add_error("solution_detail", "Solution / Repair Detail is required.")
+
+        # Required only when marking as Completed
         if status == RepairJob.Status.COMPLETED:
             if not date_out:
                 self.add_error("date_out", "A completed job needs a date out.")
-            if not solution_detail:
-                self.add_error("solution_detail", "Describe the repair or resolution before completing the job.")
             if not taken_by:
                 self.add_error("taken_by", "Record who collected the machine before completing the job.")
+            if not challan_number:
+                self.add_error("challan_number", "Challan number is required before the item can be exited.")
         return cleaned
 
 

@@ -41,7 +41,9 @@
     {% if job.date_out %}
       <div class="ticket-fields">
         <div class="ticket-field"><span class="tf-label">Date Out</span><span class="tf-value">{{ job.date_out }}</span></div>
+        <div class="ticket-field"><span class="tf-label">Repaired By</span><span class="tf-value">{{ job.repaired_by|default:"—" }}</span></div>
         <div class="ticket-field"><span class="tf-label">Taken By</span><span class="tf-value">{{ job.taken_by|default:"—" }}</span></div>
+        <div class="ticket-field"><span class="tf-label">Challan No.</span><span class="tf-value mono">{{ job.challan_number|default:"—" }}</span></div>
       </div>
       <div class="ticket-fields single" style="margin-top:14px;">
       <div class="ticket-field"><span class="tf-label">Solution / Repair Detail</span><span class="tf-value">{{ job.solution_detail|default:"—"|linebreaksbr }}</span></div>
