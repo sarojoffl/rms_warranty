@@ -114,9 +114,11 @@ code, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums;
 .sidebar-brand .brand-name {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: var(--color-ink);
   letter-spacing: -0.02em;
+  display: block;
+  white-space: nowrap;
 }
 
 .sidebar-brand .brand-sub {
@@ -801,7 +803,7 @@ input:focus, select:focus, textarea:focus {
   max-width: 380px;
 }
 
-.login-card .brand-name { font-family: var(--font-display); font-size: 1.32rem; font-weight: 800; }
+.login-card .brand-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; display: block; white-space: nowrap; }
 .login-card .brand-sub {
   font-size: 0.76rem; color: var(--color-ink-muted); font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.1em; display: block; margin: 5px 0 26px;
@@ -1198,4 +1200,12 @@ input:focus, select:focus, textarea:focus {
   font-style: italic;
   cursor: default;
   background: transparent;
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--color-primary);
 }

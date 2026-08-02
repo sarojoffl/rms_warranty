@@ -72,16 +72,14 @@ class RepairJobExitForm(forms.ModelForm):
         if date_out and self.instance.date_in and date_out < self.instance.date_in:
             self.add_error("date_out", "Date out cannot be before the intake date.")
 
-        # Always required on exit
-        if not repaired_by:
-            self.add_error("repaired_by", "Repaired By is required.")
-        if not solution_detail:
-            self.add_error("solution_detail", "Solution / Repair Detail is required.")
-
-        # Required only when marking as Completed
+        # Required only when marking as Completed (exited)
         if status == RepairJob.Status.COMPLETED:
             if not date_out:
                 self.add_error("date_out", "A completed job needs a date out.")
+            if not repaired_by:
+                self.add_error("repaired_by", "Repaired By is required to complete the job.")
+            if not solution_detail:
+                self.add_error("solution_detail", "Solution / Repair Detail is required to complete the job.")
             if not taken_by:
                 self.add_error("taken_by", "Record who collected the machine before completing the job.")
             if not challan_number:
