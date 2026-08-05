@@ -7,7 +7,41 @@
     <span class="eyebrow">Management</span>
     <h2>Business Overview</h2>
   </div>
-  <span class="dashboard-period">Month to {{ today|date:"j M Y" }}</span>
+  <span class="dashboard-period">Viewing: {{ month_label }}{% if selected_client %} ({{ selected_client.name }}){% endif %}</span>
+</div>
+
+<!-- Admin Monthly & Client Wise Filter Bar -->
+<div class="filter-bar card" style="padding:14px 18px; margin-bottom:20px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+  <form method="get" action="{% url 'management_dashboard' %}" style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:0;">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <label for="month-picker" style="font-weight:600; font-size:0.85rem; color:var(--color-text-muted);">Month Filter:</label>
+      <select id="month-picker" name="month" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
+        {% for m in available_months %}
+          <option value="{{ m.value }}" {% if selected_month == m.value %}selected{% endif %}>{{ m.label }}</option>
+        {% endfor %}
+        <option value="all" {% if selected_month == 'all' %}selected{% endif %}>All Time</option>
+      </select>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:6px;">
+      <label for="client-filter" style="font-weight:600; font-size:0.85rem; color:var(--color-text-muted);">Client Filter:</label>
+      <select id="client-filter" name="client_id" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
+        <option value="">All Clients</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-outline btn-sm">Apply</button>
+    {% if selected_month != today|date:"Y-m" or client_id %}
+      <a href="{% url 'management_dashboard' %}" class="btn btn-outline btn-sm">Reset</a>
+    {% endif %}
+  </form>
+
+  {% if selected_client %}
+    <a href="{% url 'client_detail' selected_client.pk %}" class="btn btn-primary btn-sm">View Client Profile →</a>
+  {% endif %}
 </div>
 
 {% if delayed_repairs %}

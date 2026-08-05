@@ -13,10 +13,45 @@
   </a>{% endif %}
 </div>
 
-<div class="filter-tabs">
-  <a href="{% url 'repair_list' %}" class="filter-tab {% if not status %}active{% endif %}">All</a>
-  <a href="?status=pending" class="filter-tab {% if status == 'pending' %}active{% endif %}">Pending</a>
-  <a href="?status=completed" class="filter-tab {% if status == 'completed' %}active{% endif %}">Completed</a>
+<div class="card" style="padding:14px 18px; margin-bottom:20px;">
+  <form method="get" action="{% url 'repair_list' %}" style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px; margin:0;">
+    <div>
+      <label style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Status:</label>
+      <div class="filter-tabs" style="margin-bottom:0;">
+        <a href="?status={% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if not status %}active{% endif %}">All</a>
+        <a href="?status=pending{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if status == 'pending' %}active{% endif %}">Pending</a>
+        <a href="?status=completed{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if status == 'completed' %}active{% endif %}">Completed</a>
+      </div>
+      {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    </div>
+
+    <div>
+      <label for="client_id" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Client Filter:</label>
+      <select name="client_id" id="client_id" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+        <option value="">All Clients</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="serial_number" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Serial Number (S/N):</label>
+      <input type="text" name="serial_number" id="serial_number" value="{{ serial_number }}" placeholder="Enter S/N..." style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px; min-width:150px;">
+    </div>
+
+    <div>
+      <label for="date_in" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date:</label>
+      <input type="date" name="date_in" id="date_in" value="{{ date_in }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button type="submit" class="btn btn-primary btn-sm" style="height:36px; padding:0 14px;">Filter</button>
+      {% if has_filters %}
+        <a href="{% url 'repair_list' %}" class="btn btn-outline btn-sm" style="height:36px; display:inline-flex; align-items:center;">Reset</a>
+      {% endif %}
+    </div>
+  </form>
 </div>
 
 <div class="card">
@@ -37,7 +72,7 @@
         <tr onclick="window.location='{% url 'repair_detail' job.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ job.job_number }}</td>
           <td>{{ job.date_in }}</td>
-          <td>{{ job.client.name }}</td>
+          <td><a href="{% url 'client_detail' job.client.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ job.client.name }}</a></td>
           <td>{{ job.machine.machine_type }} — {{ job.machine.brand }}</td>
           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ job.problem_cause }}</td>
           <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>

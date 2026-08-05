@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+import calendar
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 from django.contrib import messages
@@ -167,6 +168,63 @@ def machine_create(request):
 # ---------------------------------------------------------------------------
 # RMS (Repair) workflow
 # ---------------------------------------------------------------------------
+# Client Directory & Client Wise Details (Accessible to both Admin & Staff)
+# ---------------------------------------------------------------------------
+
+@login_required
+def client_list(request):
+    """Client Directory view accessible by both Admin and Staff."""
+    from django.db.models import Q, Count
+    query = request.GET.get("q", "").strip()
+    clients = Client.objects.annotate(
+        machines_count=Count("machines", distinct=True),
+        repairs_count=Count("repair_jobs", distinct=True),
+        claims_count=Count("warranty_claims", distinct=True),
+    )
+    if query:
+        clients = clients.filter(
+            Q(name__icontains=query) |
+            Q(company_name__icontains=query) |
+            Q(phone__icontains=query) |
+            Q(address__icontains=query)
+        )
+    return render(request, "service/client_list.html", {
+        "clients": clients,
+        "query": query,
+    })
+
+
+@login_required
+def client_detail(request, pk):
+    """Client Wise Details view showing profile, stats, machines, repair jobs, and warranty claims."""
+    client = get_object_or_404(Client, pk=pk)
+    machines = client.machines.all()
+    repair_jobs = client.repair_jobs.select_related("machine").order_by("-created_at")
+    warranty_claims = client.warranty_claims.select_related("machine").order_by("-created_at")
+
+    # Client-specific stats
+    total_repairs = repair_jobs.count()
+    pending_repairs = repair_jobs.filter(status=RepairJob.Status.PENDING).count()
+    completed_repairs = repair_jobs.filter(status=RepairJob.Status.COMPLETED).count()
+    total_claims = warranty_claims.count()
+    open_claims = warranty_claims.filter(solved="").count()
+
+    return render(request, "service/client_detail.html", {
+        "client": client,
+        "machines": machines,
+        "repair_jobs": repair_jobs,
+        "warranty_claims": warranty_claims,
+        "total_repairs": total_repairs,
+        "pending_repairs": pending_repairs,
+        "completed_repairs": completed_repairs,
+        "total_claims": total_claims,
+        "open_claims": open_claims,
+    })
+
+
+# ---------------------------------------------------------------------------
+# RMS (Repair) workflow
+# ---------------------------------------------------------------------------
 
 @login_required
 def dashboard(request):
@@ -174,11 +232,24 @@ def dashboard(request):
     repairs = RepairJob.objects.select_related("client", "machine")
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
     
+    client_id = request.GET.get("client_id")
+    selected_client = None
+    if client_id and client_id.isdigit():
+        selected_client = Client.objects.filter(pk=client_id).first()
+        if selected_client:
+            repairs = repairs.filter(client=selected_client)
+            claims = claims.filter(sold_to=selected_client)
+
     three_days_ago = date.today() - timedelta(days=3)
     delayed_repairs = RepairJob.objects.filter(
         status=RepairJob.Status.PENDING,
         date_in__lte=three_days_ago
-    ).select_related("client", "machine")
+    )
+    if selected_client:
+        delayed_repairs = delayed_repairs.filter(client=selected_client)
+    delayed_repairs = delayed_repairs.select_related("client", "machine")
+
+    clients = Client.objects.all()
 
     return render(request, "service/dashboard.html", {
         "client_count": Client.objects.count(),
@@ -191,52 +262,113 @@ def dashboard(request):
         "recent_repairs": repairs[:5],
         "recent_claims": claims[:5],
         "delayed_repairs": delayed_repairs,
+        "clients": clients,
+        "selected_client": selected_client,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
     })
 
 
 @management_required
 def management_dashboard(request):
-    """Read-only KPI overview for management users."""
+    """Read-only KPI overview for management users with Monthly and Client filters."""
     import json
     from django.db.models import Count
 
     today = date.today()
-    month_start = today.replace(day=1)
-    period_start = today - timedelta(days=30)
-    repairs = RepairJob.objects.all()
-    claims = WarrantyClaim.objects.all()
-    completed_this_month = repairs.filter(
-        status=RepairJob.Status.COMPLETED,
-        date_out__gte=month_start,
-    )
-    turnaround_days = [
-        (job.date_out - job.date_in).days
-        for job in completed_this_month.only("date_in", "date_out")
-        if job.date_out
-    ]
+    selected_month = request.GET.get("month", "").strip()
+    client_id = request.GET.get("client_id", "").strip()
 
-    three_days_ago = today - timedelta(days=3)
-    delayed_repairs = RepairJob.objects.filter(
-        status=RepairJob.Status.PENDING,
-        date_in__lte=three_days_ago
-    ).select_related("client", "machine")
+    if not selected_month:
+        selected_month = today.strftime("%Y-%m")
 
-    repairs_received_month = repairs.filter(date_in__gte=month_start).count()
+    # Base querysets
+    repairs = RepairJob.objects.select_related("client", "machine")
+    claims = WarrantyClaim.objects.select_related("sold_to", "machine")
+
+    selected_client = None
+    if client_id and client_id.isdigit():
+        selected_client = Client.objects.filter(pk=client_id).first()
+        if selected_client:
+            repairs = repairs.filter(client=selected_client)
+            claims = claims.filter(sold_to=selected_client)
+
+    is_all_time = (selected_month == "all")
+    if is_all_time:
+        month_label = "All Time"
+        month_start = None
+        month_end = None
+
+        repairs_received_month = repairs.count()
+        completed_this_month = repairs.filter(status=RepairJob.Status.COMPLETED)
+        claims_received_month = claims.count()
+        claims_claimable_month = claims.filter(claimable=WarrantyClaim.Claimable.YES).count()
+    else:
+        try:
+            dt = datetime.strptime(selected_month, "%Y-%m").date()
+            year, month_num = dt.year, dt.month
+        except (ValueError, TypeError):
+            dt = today
+            year, month_num = today.year, today.month
+            selected_month = today.strftime("%Y-%m")
+        
+        last_day = calendar.monthrange(year, month_num)[1]
+        month_start = date(year, month_num, 1)
+        month_end = date(year, month_num, last_day)
+        month_label = month_start.strftime("%B %Y")
+
+        repairs_received_month = repairs.filter(date_in__gte=month_start, date_in__lte=month_end).count()
+        completed_this_month = repairs.filter(
+            status=RepairJob.Status.COMPLETED,
+            date_out__gte=month_start,
+            date_out__lte=month_end,
+        )
+        claims_received_month = claims.filter(date_in__gte=month_start, date_in__lte=month_end).count()
+        claims_claimable_month = claims.filter(
+            date_in__gte=month_start,
+            date_in__lte=month_end,
+            claimable=WarrantyClaim.Claimable.YES,
+        ).count()
+
     repairs_completed_month = completed_this_month.count()
     completion_rate = int((repairs_completed_month / repairs_received_month) * 100) if repairs_received_month > 0 else 0
 
-    # Chart 1: Last 7 days intake trend
+    turnaround_days = [
+        (job.date_out - job.date_in).days
+        for job in completed_this_month
+        if job.date_out and job.date_in
+    ]
+
+    three_days_ago = today - timedelta(days=3)
+    delayed_repairs = repairs.filter(
+        status=RepairJob.Status.PENDING,
+        date_in__lte=three_days_ago
+    )
+
+    # Intakes Trend Chart data
     chart_days = []
     chart_repairs = []
     chart_claims = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        chart_days.append(day.strftime("%b %d"))
-        chart_repairs.append(repairs.filter(date_in=day).count())
-        chart_claims.append(claims.filter(date_in=day).count())
 
-    # Chart 2: Asset breakdown
-    machine_types_data = list(Machine.objects.values('machine_type').annotate(count=Count('id')).order_by('-count')[:5])
+    if not is_all_time and month_start and month_end:
+        cur = month_start
+        while cur <= month_end:
+            chart_days.append(cur.strftime("%d %b"))
+            chart_repairs.append(repairs.filter(date_in=cur).count())
+            chart_claims.append(claims.filter(date_in=cur).count())
+            cur += timedelta(days=1)
+    else:
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            chart_days.append(day.strftime("%b %d"))
+            chart_repairs.append(repairs.filter(date_in=day).count())
+            chart_claims.append(claims.filter(date_in=day).count())
+
+    # Asset breakdown
+    if selected_client:
+        machine_types_qs = Machine.objects.filter(client=selected_client)
+    else:
+        machine_types_qs = Machine.objects.all()
+    machine_types_data = list(machine_types_qs.values('machine_type').annotate(count=Count('id')).order_by('-count')[:5])
     chart_machine_types = [item['machine_type'] for item in machine_types_data]
     chart_machine_counts = [item['count'] for item in machine_types_data]
 
@@ -248,22 +380,37 @@ def management_dashboard(request):
         "machine_counts": chart_machine_counts,
     })
 
+    # Available months list for dropdown selector (past 12 months)
+    available_months = []
+    curr_m = today.replace(day=1)
+    for _ in range(12):
+        m_str = curr_m.strftime("%Y-%m")
+        m_lbl = curr_m.strftime("%B %Y")
+        available_months.append({"value": m_str, "label": m_lbl})
+        prev_m_end = curr_m - timedelta(days=1)
+        curr_m = prev_m_end.replace(day=1)
+
+    clients = Client.objects.all()
+
     return render(request, "service/management_dashboard.html", {
+        "selected_month": selected_month,
+        "month_label": month_label,
         "month_start": month_start,
         "today": today,
+        "selected_client": selected_client,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
+        "clients": clients,
+        "available_months": available_months,
         "repairs_received_month": repairs_received_month,
         "repairs_completed_month": repairs_completed_month,
         "repair_backlog": repairs.filter(status=RepairJob.Status.PENDING).count(),
         "completion_rate": completion_rate,
         "average_turnaround": round(sum(turnaround_days) / len(turnaround_days), 1) if turnaround_days else None,
-        "claims_received_month": claims.filter(date_in__gte=month_start).count(),
-        "claims_claimable_month": claims.filter(
-            date_in__gte=month_start,
-            claimable=WarrantyClaim.Claimable.YES,
-        ).count(),
+        "claims_received_month": claims_received_month,
+        "claims_claimable_month": claims_claimable_month,
         "claims_open": claims.filter(solved="").count(),
-        "repairs_last_30_days": repairs.filter(date_in__gte=period_start).count(),
-        "claims_last_30_days": claims.filter(date_in__gte=period_start).count(),
+        "repairs_last_30_days": repairs.filter(date_in__gte=today - timedelta(days=30)).count(),
+        "claims_last_30_days": claims.filter(date_in__gte=today - timedelta(days=30)).count(),
         "recent_logs": ActivityLog.objects.select_related("actor")[:6],
         "delayed_repairs": delayed_repairs,
         "chart_json": chart_json,
@@ -276,13 +423,36 @@ def management_logs(request):
         "logs": ActivityLog.objects.select_related("actor"),
     })
 
+
 @login_required
 def repair_list(request):
     jobs = RepairJob.objects.select_related("client", "machine")
-    status = request.GET.get("status")
+    status = request.GET.get("status", "").strip()
+    client_id = request.GET.get("client_id", "").strip()
+    serial_number = request.GET.get("serial_number", "").strip()
+    date_in = request.GET.get("date_in", "").strip()
+
     if status in ("pending", "completed"):
         jobs = jobs.filter(status=status)
-    return render(request, "service/repair_list.html", {"jobs": jobs, "status": status})
+    if client_id and client_id.isdigit():
+        jobs = jobs.filter(client_id=client_id)
+    if serial_number:
+        jobs = jobs.filter(machine__serial_number__icontains=serial_number)
+    if date_in:
+        jobs = jobs.filter(date_in=date_in)
+
+    clients = Client.objects.all()
+    has_filters = bool(status or client_id or serial_number or date_in)
+
+    return render(request, "service/repair_list.html", {
+        "jobs": jobs,
+        "status": status,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
+        "serial_number": serial_number,
+        "date_in": date_in,
+        "clients": clients,
+        "has_filters": has_filters,
+    })
 
 
 @login_required
@@ -358,9 +528,20 @@ def repair_export_pdf(request, pk):
 def warranty_list(request):
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
     claimable = request.GET.get("claimable")
+    client_id = request.GET.get("client_id")
+
     if claimable in ("yes", "no"):
         claims = claims.filter(claimable=claimable)
-    return render(request, "service/warranty_list.html", {"claims": claims, "claimable": claimable})
+    if client_id and client_id.isdigit():
+        claims = claims.filter(sold_to_id=client_id)
+
+    clients = Client.objects.all()
+    return render(request, "service/warranty_list.html", {
+        "claims": claims,
+        "claimable": claimable,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
+        "clients": clients,
+    })
 
 
 @login_required

@@ -13,10 +13,26 @@
   </a>{% endif %}
 </div>
 
-<div class="filter-tabs">
-  <a href="{% url 'warranty_list' %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
-  <a href="?claimable=yes" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Claimable</a>
-  <a href="?claimable=no" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Not Claimable</a>
+<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+  <div class="filter-tabs" style="margin-bottom:0;">
+    <a href="{% url 'warranty_list' %}{% if client_id %}?client_id={{ client_id }}{% endif %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
+    <a href="?claimable=yes{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Claimable</a>
+    <a href="?claimable=no{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Not Claimable</a>
+  </div>
+
+  <form method="get" action="{% url 'warranty_list' %}" style="display:flex; align-items:center; gap:8px; margin:0;">
+    {% if claimable %}<input type="hidden" name="claimable" value="{{ claimable }}">{% endif %}
+    <label for="client_id" style="font-weight:600; font-size:0.85rem; color:var(--color-text-muted);">Client Filter:</label>
+    <select name="client_id" id="client_id" style="padding:6px 12px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
+      <option value="">All Clients</option>
+      {% for c in clients %}
+        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+      {% endfor %}
+    </select>
+    {% if client_id %}
+      <a href="{% url 'warranty_list' %}{% if claimable %}?claimable={{ claimable }}{% endif %}" class="btn btn-outline btn-sm">Clear Filter</a>
+    {% endif %}
+  </form>
 </div>
 
 <div class="card">
@@ -37,7 +53,7 @@
         <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ claim.job_number }}</td>
           <td>{{ claim.date_in }}</td>
-          <td>{{ claim.sold_to.name }}</td>
+          <td><a href="{% url 'client_detail' claim.sold_to.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ claim.sold_to.name }}</a></td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>
             {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending</span>{% endif %}

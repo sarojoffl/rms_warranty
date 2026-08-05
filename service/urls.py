@@ -7,7 +7,9 @@ urlpatterns = [
     path("management/", views.management_dashboard, name="management_dashboard"),
     path("management/logs/", views.management_logs, name="management_logs"),
 
-    # Quick-create
+    # Clients
+    path("clients/", views.client_list, name="client_list"),
+    path("clients/<int:pk>/", views.client_detail, name="client_detail"),
     path("clients/new/", views.helpdesk_required(views.client_create), name="client_create"),
     path("machines/new/", views.helpdesk_required(views.machine_create), name="machine_create"),
     path("machines/options/", views.helpdesk_required(views.machine_options), name="machine_options"),

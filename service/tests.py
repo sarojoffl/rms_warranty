@@ -249,3 +249,84 @@ class TicketFormValidationTests(TestCase):
         response = self.client.get(reverse("warranty_receipt", args=[claim.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Warranty Claim Slip")
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_admin_monthly_and_client_filters(self):
+        user = get_user_model().objects.create_user(username="admin_user", password="test-password")
+        user.groups.add(Group.objects.get(name="Management"))
+        self.client.force_login(user)
+
+        # Create repair job for Asha in current month
+        RepairJob.objects.create(
+            date_in=date.today(), client=self.client_a, received_by="Staff",
+            machine=self.machine, problem_cause="Screen broken",
+        )
+
+        # Monthly filter GET request
+        curr_month = date.today().strftime("%Y-%m")
+        response = self.client.get(reverse("management_dashboard"), {"month": curr_month})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["repairs_received_month"], 1)
+
+        # Client filter GET request
+        response = self.client.get(reverse("management_dashboard"), {"client_id": self.client_a.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_client"], self.client_a)
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_client_list_and_client_detail_views(self):
+        staff = get_user_model().objects.create_user(username="staff_member", password="test-password")
+        self.client.force_login(staff)
+
+        # Test client list view
+        response = self.client.get(reverse("client_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Client Wise Details")
+        self.assertContains(response, self.client_a.name)
+
+        # Test client detail view
+        response = self.client.get(reverse("client_detail", args=[self.client_a.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.client_a.name)
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_repair_and_warranty_list_client_filters(self):
+        staff = get_user_model().objects.create_user(username="staff_filter", password="test-password")
+        self.client.force_login(staff)
+
+        job_a = RepairJob.objects.create(
+            date_in=date.today(), client=self.client_a, received_by="Staff",
+            machine=self.machine, problem_cause="Overheating",
+        )
+
+        # Filter repair list by client_a
+        response = self.client.get(reverse("repair_list"), {"client_id": self.client_a.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(job_a, response.context["jobs"])
+
+        # Filter repair list by serial number
+        response = self.client.get(reverse("repair_list"), {"serial_number": "SN-100"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(job_a, response.context["jobs"])
+
+        # Filter repair list by date
+        today_str = date.today().strftime("%Y-%m-%d")
+        response = self.client.get(reverse("repair_list"), {"date_in": today_str})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(job_a, response.context["jobs"])
+
+        # Filter warranty list by client_a
+        claim_a = WarrantyClaim.objects.create(
+            date_in=date.today(), received_by="Staff", sold_to=self.client_a,
+            machine=self.machine,
+        )
+        response = self.client.get(reverse("warranty_list"), {"client_id": self.client_a.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(claim_a, response.context["claims"])
+

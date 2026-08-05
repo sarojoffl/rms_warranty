@@ -13,6 +13,24 @@
   </div>
 </div>
 
+<div class="filter-bar card" style="padding:12px 16px; margin-bottom:20px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+  <form method="get" action="{% url 'dashboard' %}" style="display:flex; align-items:center; gap:8px; margin:0;">
+    <label for="staff-client-filter" style="font-weight:600; font-size:0.85rem; color:var(--color-text-muted);">Client Filter:</label>
+    <select name="client_id" id="staff-client-filter" style="padding:6px 12px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
+      <option value="">All Clients</option>
+      {% for c in clients %}
+        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+      {% endfor %}
+    </select>
+    {% if client_id %}
+      <a href="{% url 'dashboard' %}" class="btn btn-outline btn-sm">Clear Filter</a>
+    {% endif %}
+  </form>
+  {% if selected_client %}
+    <a href="{% url 'client_detail' selected_client.pk %}" class="btn btn-outline btn-sm">View Profile for {{ selected_client.name }} →</a>
+  {% endif %}
+</div>
+
 {% if delayed_repairs %}
 <div class="delayed-alert" role="alert">
   <div class="alert-content">

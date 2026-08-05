@@ -1,0 +1,209 @@
+{% extends "service/base.html" %}
+{% block page_title %}Client Details — {{ client.name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <a href="{% url 'client_list' %}" class="eyebrow link-primary" style="display:inline-flex; align-items:center; gap:4px; margin-bottom:4px;">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to Client Directory
+    </a>
+    <h2>{{ client.name }}</h2>
+    {% if client.company_name %}<p style="color:var(--color-text-muted); font-size:0.9rem; margin-top:2px;">{{ client.company_name }}</p>{% endif %}
+  </div>
+  <div class="btn-row">
+    {% if not management_user %}
+    <a href="{% url 'repair_create' %}" class="btn btn-primary">+ New Repair Intake</a>
+    <a href="{% url 'warranty_create' %}" class="btn btn-outline">+ New Warranty Claim</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Client Info Card & Key Stats -->
+<div class="dashboard-grid" style="margin-bottom:24px;">
+  <div class="card" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid #f3f4f6; padding-bottom:10px;">
+      <h3 style="margin:0; font-size:1.1rem;">Client Contact & Information</h3>
+      <span class="stamp neutral">Client ID: #{{ client.id }}</span>
+    </div>
+    <dl class="metric-list" style="margin:0;">
+      <div style="padding:8px 0;">
+        <dt style="font-weight:600; color:var(--color-text-muted);">Full Name</dt>
+        <dd style="font-weight:700; color:var(--color-text-heading);">{{ client.name }}</dd>
+      </div>
+      <div style="padding:8px 0;">
+        <dt style="font-weight:600; color:var(--color-text-muted);">Company Name</dt>
+        <dd>{{ client.company_name|default:"—" }}</dd>
+      </div>
+      <div style="padding:8px 0;">
+        <dt style="font-weight:600; color:var(--color-text-muted);">Phone Number</dt>
+        <dd>{{ client.phone|default:"—" }}</dd>
+      </div>
+      <div style="padding:8px 0;">
+        <dt style="font-weight:600; color:var(--color-text-muted);">Address</dt>
+        <dd>{{ client.address|default:"—" }}</dd>
+      </div>
+      <div style="padding:8px 0;">
+        <dt style="font-weight:600; color:var(--color-text-muted);">Customer Since</dt>
+        <dd>{{ client.created_at|date:"j M Y" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="stat-strip" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px;">
+    <div class="stat-card">
+      <span class="stat-label">Registered Assets</span>
+      <span class="stat-value">{{ machines|length }}</span>
+      <span class="stat-note">Machines on record</span>
+    </div>
+
+    <div class="stat-card amber">
+      <span class="stat-label">Pending Repairs</span>
+      <span class="stat-value">{{ pending_repairs }}</span>
+      <span class="stat-note">of {{ total_repairs }} total jobs</span>
+    </div>
+
+    <div class="stat-card success">
+      <span class="stat-label">Completed Repairs</span>
+      <span class="stat-value">{{ completed_repairs }}</span>
+      <span class="stat-note">Delivered & closed</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Warranty Claims</span>
+      <span class="stat-value">{{ total_claims }}</span>
+      <span class="stat-note">{{ open_claims }} open claim(s)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Registered Machines -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>Registered Assets / Machines ({{ machines|length }})</h3>
+    {% if not management_user %}
+    <a href="{% url 'machine_create' %}?client_id={{ client.id }}" class="btn btn-outline btn-sm js-quick-add" data-title="New Machine">+ Add Machine</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Asset / Machine</th>
+          <th>Brand</th>
+          <th>Model Name</th>
+          <th>Serial Number</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for machine in machines %}
+        <tr>
+          <td><strong style="color:var(--color-text-heading);">{{ machine.machine_type }}</strong></td>
+          <td>{{ machine.brand|default:"—" }}</td>
+          <td>{{ machine.model_name|default:"—" }}</td>
+          <td><code style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace;">{{ machine.serial_number|default:"—" }}</code></td>
+          <td style="font-size:0.875rem; color:var(--color-text-muted);">{{ machine.details|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">
+          <div class="empty-state compact">
+            <strong>No assets registered for {{ client.name }}</strong>
+            <p>Add a machine when creating a repair intake.</p>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Repair Jobs History (RMS) -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>Repair Jobs History (RMS) ({{ total_repairs }})</h3>
+    <a href="{% url 'repair_list' %}?client_id={{ client.id }}" class="btn btn-outline btn-sm">Filter in Repair List</a>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Job No.</th>
+          <th>Date In</th>
+          <th>Machine</th>
+          <th>Problem / Cause</th>
+          <th>Date Out</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in repair_jobs %}
+        <tr onclick="window.location='{% url 'repair_detail' job.pk %}'" style="cursor:pointer;">
+          <td class="job-num">{{ job.job_number }}</td>
+          <td>{{ job.date_in }}</td>
+          <td>{{ job.machine.machine_type }} — {{ job.machine.brand }}</td>
+          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ job.problem_cause }}</td>
+          <td>{{ job.date_out|default:"—" }}</td>
+          <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>
+          <td><a href="{% url 'repair_detail' job.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state compact">
+            <strong>No repair jobs on record</strong>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Warranty Claims History -->
+<div class="card">
+  <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>Warranty Claims History ({{ total_claims }})</h3>
+    <a href="{% url 'warranty_list' %}?client_id={{ client.id }}" class="btn btn-outline btn-sm">Filter in Warranty List</a>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Job No.</th>
+          <th>Date In</th>
+          <th>Machine</th>
+          <th>Claimable</th>
+          <th>Repair Status</th>
+          <th>Sent Date Out</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for claim in warranty_claims %}
+        <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
+          <td class="job-num">{{ claim.job_number }}</td>
+          <td>{{ claim.date_in }}</td>
+          <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
+          <td>
+            {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending</span>{% endif %}
+          </td>
+          <td>
+            {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
+          </td>
+          <td>{{ claim.sent_date_out|default:"—" }}</td>
+          <td><a href="{% url 'warranty_detail' claim.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state compact">
+            <strong>No warranty claims on record</strong>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "service/base.html" %}
+{% block page_title %}Clients Directory{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Directory</span>
+    <h2>Client Wise Details</h2>
+  </div>
+  {% if not management_user %}
+  <a href="{% url 'client_create' %}" class="btn btn-primary js-quick-add" data-title="New Client">
+    <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add New Client
+  </a>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:20px; padding:16px 20px;">
+  <form method="get" action="{% url 'client_list' %}" style="display:flex; gap:12px; align-items:center;">
+    <div style="flex:1; position:relative;">
+      <input type="search" name="q" value="{{ query }}" placeholder="Search client by name, company, phone, address..." class="form-control" style="padding-left:36px; width:100%; border-radius:8px;">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--color-text-muted);"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if query %}
+      <a href="{% url 'client_list' %}" class="btn btn-outline">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Client Name</th>
+          <th>Company</th>
+          <th>Phone</th>
+          <th>Registered Machines</th>
+          <th>Repair Jobs</th>
+          <th>Warranty Claims</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr onclick="window.location='{% url 'client_detail' client.pk %}'" style="cursor:pointer;">
+          <td>
+            <strong style="color:var(--color-primary); font-size:0.95rem;">{{ client.name }}</strong>
+          </td>
+          <td>{{ client.company_name|default:"—" }}</td>
+          <td>{{ client.phone|default:"—" }}</td>
+          <td>
+            <span class="stamp neutral" style="font-weight:700;">{{ client.machines_count }} asset(s)</span>
+          </td>
+          <td>
+            <span class="stamp pending" style="font-weight:700;">{{ client.repairs_count }} job(s)</span>
+          </td>
+          <td>
+            <span class="stamp completed" style="font-weight:700;">{{ client.claims_count }} claim(s)</span>
+          </td>
+          <td>
+            <a href="{% url 'client_detail' client.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View Details →</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg fill="none" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <strong>No clients found</strong>
+            <p>{% if query %}No results matching "{{ query }}".{% else %}Add your first client to get started.{% endif %}</p>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
