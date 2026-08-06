@@ -111,8 +111,8 @@ class RepairJob(models.Model):
 
 class WarrantyClaim(models.Model):
     class Claimable(models.TextChoices):
-        YES = "yes", "Yes"
-        NO = "no", "No"
+        YES = "yes", "Approved"
+        NO = "no", "Rejected"
 
     class RepairStatus(models.TextChoices):
         SOLVED = "solved", "Solved"

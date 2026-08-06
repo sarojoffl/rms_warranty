@@ -16,8 +16,9 @@
 <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
   <div class="filter-tabs" style="margin-bottom:0;">
     <a href="{% url 'warranty_list' %}{% if client_id %}?client_id={{ client_id }}{% endif %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
-    <a href="?claimable=yes{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Claimable</a>
-    <a href="?claimable=no{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Not Claimable</a>
+    <a href="?claimable=pending{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'pending' %}active{% endif %}">Pending Review</a>
+    <a href="?claimable=yes{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Approved</a>
+    <a href="?claimable=no{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Rejected</a>
   </div>
 
   <form method="get" action="{% url 'warranty_list' %}" style="display:flex; align-items:center; gap:8px; margin:0;">
@@ -29,8 +30,8 @@
         <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
       {% endfor %}
     </select>
-    {% if client_id %}
-      <a href="{% url 'warranty_list' %}{% if claimable %}?claimable={{ claimable }}{% endif %}" class="btn btn-outline btn-sm">Clear Filter</a>
+    {% if has_filters %}
+      <a href="{% url 'warranty_list' %}" class="btn btn-outline btn-sm">Reset</a>
     {% endif %}
   </form>
 </div>
@@ -44,7 +45,7 @@
           <th>Date In</th>
           <th>Sold To</th>
           <th>Machine</th>
-          <th>Claimable</th>
+          <th>Claim Status</th>
           <th>Repair Status</th>
         </tr>
       </thead>
@@ -56,10 +57,22 @@
           <td><a href="{% url 'client_detail' claim.sold_to.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ claim.sold_to.name }}</a></td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>
-            {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending</span>{% endif %}
+            {% if claim.claimable == 'yes' %}
+              <span class="stamp completed">Approved</span>
+            {% elif claim.claimable == 'no' %}
+              <span class="stamp pending" style="background:#fee2e2; color:#991b1b;">Rejected</span>
+            {% else %}
+              <span class="stamp neutral">Pending Review</span>
+            {% endif %}
           </td>
           <td>
-            {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
+            {% if claim.solved == 'solved' %}
+              <span class="stamp completed">{{ claim.get_solved_display }}</span>
+            {% elif claim.solved == 'not_solved' %}
+              <span class="stamp pending" style="background:#fee2e2; color:#991b1b;">{{ claim.get_solved_display }}</span>
+            {% else %}
+              <span class="stamp neutral">Open</span>
+            {% endif %}
           </td>
         </tr>
         {% empty %}
@@ -68,13 +81,27 @@
             <div class="empty-icon">
               <svg fill="none" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <strong>No warranty claims yet</strong>
-            <p>Log a new intake to open the first ticket.</p>
+            <strong>No warranty claims found</strong>
+            <p>Log a new intake to open a ticket.</p>
           </div>
         </td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {% if page_obj and page_obj.has_other_pages %}
+  <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-top:1px solid #f3f4f6;">
+    <span style="font-size:0.85rem; color:var(--color-text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} claims)</span>
+    <div style="display:flex; gap:6px;">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if claimable %}&claimable={{ claimable }}{% endif %}{% if client_id %}&client_id={{ client_id }}{% endif %}" class="btn btn-outline btn-sm">&laquo; Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if claimable %}&claimable={{ claimable }}{% endif %}{% if client_id %}&client_id={{ client_id }}{% endif %}" class="btn btn-outline btn-sm">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

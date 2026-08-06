@@ -4,7 +4,7 @@
 
 <div class="page-head">
   <div>
-    <span class="eyebrow">Universal Search</span>
+    <span class="eyebrow">Search</span>
     <h2>Results for "{{ query }}"</h2>
   </div>
 </div>
@@ -39,15 +39,17 @@
                 <th>Company</th>
                 <th>Phone</th>
                 <th>Address</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {% for client in clients %}
-                <tr>
-                  <td><strong>{{ client.name }}</strong></td>
+                <tr onclick="window.location='{% url 'client_detail' client.pk %}'" style="cursor:pointer;">
+                  <td><strong style="color:var(--color-primary);">{{ client.name }}</strong></td>
                   <td>{{ client.company_name|default:"—" }}</td>
                   <td>{{ client.phone|default:"—" }}</td>
                   <td>{{ client.address|default:"—" }}</td>
+                  <td><a href="{% url 'client_detail' client.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View Client Profile →</a></td>
                 </tr>
               {% endfor %}
             </tbody>

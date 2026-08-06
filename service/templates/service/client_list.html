@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <span class="eyebrow">Directory</span>
-    <h2>Client Wise Details</h2>
+    <h2>Client Details</h2>
   </div>
   {% if not management_user %}
   <a href="{% url 'client_create' %}" class="btn btn-primary js-quick-add" data-title="New Client">
@@ -77,6 +77,20 @@
       </tbody>
     </table>
   </div>
+  
+  {% if page_obj and page_obj.has_other_pages %}
+  <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-top:1px solid #f3f4f6;">
+    <span style="font-size:0.85rem; color:var(--color-text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} clients)</span>
+    <div style="display:flex; gap:6px;">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline btn-sm">&laquo; Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline btn-sm">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {% endblock %}

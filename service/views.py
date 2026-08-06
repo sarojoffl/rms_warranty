@@ -5,6 +5,7 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -188,8 +189,13 @@ def client_list(request):
             Q(phone__icontains=query) |
             Q(address__icontains=query)
         )
+    clients = clients.order_by("name")
+    paginator = Paginator(clients, 15)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     return render(request, "service/client_list.html", {
-        "clients": clients,
+        "clients": page_obj,
+        "page_obj": page_obj,
         "query": query,
     })
 
@@ -419,8 +425,12 @@ def management_dashboard(request):
 
 @management_required
 def management_logs(request):
+    logs_qs = ActivityLog.objects.select_related("actor")
+    paginator = Paginator(logs_qs, 25)
+    page_obj = paginator.get_page(request.GET.get("page"))
     return render(request, "service/management_logs.html", {
-        "logs": ActivityLog.objects.select_related("actor"),
+        "logs": page_obj,
+        "page_obj": page_obj,
     })
 
 
@@ -441,11 +451,15 @@ def repair_list(request):
     if date_in:
         jobs = jobs.filter(date_in=date_in)
 
+    paginator = Paginator(jobs, 15)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     clients = Client.objects.all()
     has_filters = bool(status or client_id or serial_number or date_in)
 
     return render(request, "service/repair_list.html", {
-        "jobs": jobs,
+        "jobs": page_obj,
+        "page_obj": page_obj,
         "status": status,
         "client_id": int(client_id) if client_id and client_id.isdigit() else None,
         "serial_number": serial_number,
@@ -527,20 +541,32 @@ def repair_export_pdf(request, pk):
 @login_required
 def warranty_list(request):
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
-    claimable = request.GET.get("claimable")
-    client_id = request.GET.get("client_id")
+    claimable = request.GET.get("claimable", "").strip()
+    client_id = request.GET.get("client_id", "").strip()
 
-    if claimable in ("yes", "no"):
-        claims = claims.filter(claimable=claimable)
+    if claimable == "yes":
+        claims = claims.filter(claimable=WarrantyClaim.Claimable.YES)
+    elif claimable == "no":
+        claims = claims.filter(claimable=WarrantyClaim.Claimable.NO)
+    elif claimable == "pending":
+        claims = claims.filter(claimable="")
+
     if client_id and client_id.isdigit():
         claims = claims.filter(sold_to_id=client_id)
 
+    paginator = Paginator(claims, 15)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     clients = Client.objects.all()
+    has_filters = bool(claimable or client_id)
+
     return render(request, "service/warranty_list.html", {
-        "claims": claims,
+        "claims": page_obj,
+        "page_obj": page_obj,
         "claimable": claimable,
         "client_id": int(client_id) if client_id and client_id.isdigit() else None,
         "clients": clients,
+        "has_filters": has_filters,
     })
 
 

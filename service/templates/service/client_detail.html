@@ -186,7 +186,7 @@
           <td>{{ claim.date_in }}</td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>
-            {% if claim.claimable %}<span class="stamp {{ claim.claimable }}">{{ claim.get_claimable_display }}</span>{% else %}<span class="stamp neutral">Pending</span>{% endif %}
+            {% if claim.claimable == 'yes' %}<span class="stamp completed">Approved</span>{% elif claim.claimable == 'no' %}<span class="stamp pending" style="background:#fee2e2; color:#991b1b;">Rejected</span>{% else %}<span class="stamp neutral">Pending Review</span>{% endif %}
           </td>
           <td>
             {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}

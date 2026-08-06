@@ -285,7 +285,7 @@ class TicketFormValidationTests(TestCase):
         # Test client list view
         response = self.client.get(reverse("client_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Client Wise Details")
+        self.assertContains(response, "Client Details")
         self.assertContains(response, self.client_a.name)
 
         # Test client detail view
