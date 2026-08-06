@@ -1,4 +1,4 @@
-{% load static %}
+{% load static nepali_tags %}
 
 <!DOCTYPE html>
 
@@ -68,7 +68,7 @@
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </button>
         </form>
-        <span class="topbar-date">{% now "l, j F Y" %}</span>
+        <span class="topbar-date">{% current_bs_date %}</span>
         {% if request.user.is_authenticated %}
         <span class="user-chip">
           <span class="avatar">{{ request.user.username|slice:":2"|upper }}</span>

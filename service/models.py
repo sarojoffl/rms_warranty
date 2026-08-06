@@ -104,6 +104,16 @@ class RepairJob(models.Model):
     def is_completed(self):
         return self.status == self.Status.COMPLETED
 
+    @property
+    def date_in_bs(self):
+        from .nepali_date import ad_to_bs_display
+        return ad_to_bs_display(self.date_in)
+
+    @property
+    def date_out_bs(self):
+        from .nepali_date import ad_to_bs_display
+        return ad_to_bs_display(self.date_out) if self.date_out else "—"
+
 
 # ---------------------------------------------------------------------------
 # Warranty workflow
@@ -150,6 +160,21 @@ class WarrantyClaim(models.Model):
 
     def __str__(self):
         return f"{self.job_number} — {self.sold_to}"
+
+    @property
+    def date_in_bs(self):
+        from .nepali_date import ad_to_bs_display
+        return ad_to_bs_display(self.date_in)
+
+    @property
+    def warranty_sent_date_bs(self):
+        from .nepali_date import ad_to_bs_display
+        return ad_to_bs_display(self.warranty_sent_date) if self.warranty_sent_date else "—"
+
+    @property
+    def sent_date_out_bs(self):
+        from .nepali_date import ad_to_bs_display
+        return ad_to_bs_display(self.sent_date_out) if self.sent_date_out else "—"
 
 
 class ActivityLog(models.Model):

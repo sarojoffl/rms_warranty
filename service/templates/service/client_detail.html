@@ -1,4 +1,5 @@
 {% extends "service/base.html" %}
+{% load nepali_tags %}
 {% block page_title %}Client Details — {{ client.name }}{% endblock %}
 {% block content %}
 
@@ -45,7 +46,7 @@
       </div>
       <div style="padding:8px 0;">
         <dt style="font-weight:600; color:var(--color-text-muted);">Customer Since</dt>
-        <dd>{{ client.created_at|date:"j M Y" }}</dd>
+        <dd>{{ client.created_at|to_bs }}</dd>
       </div>
     </dl>
   </div>
@@ -141,10 +142,10 @@
         {% for job in repair_jobs %}
         <tr onclick="window.location='{% url 'repair_detail' job.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ job.job_number }}</td>
-          <td>{{ job.date_in }}</td>
+          <td>{{ job.date_in_bs }}</td>
           <td>{{ job.machine.machine_type }} — {{ job.machine.brand }}</td>
           <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ job.problem_cause }}</td>
-          <td>{{ job.date_out|default:"—" }}</td>
+          <td>{{ job.date_out_bs }}</td>
           <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>
           <td><a href="{% url 'repair_detail' job.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View</a></td>
         </tr>
@@ -183,7 +184,7 @@
         {% for claim in warranty_claims %}
         <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ claim.job_number }}</td>
-          <td>{{ claim.date_in }}</td>
+          <td>{{ claim.date_in_bs }}</td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>
             {% if claim.claimable == 'yes' %}<span class="stamp completed">Approved</span>{% elif claim.claimable == 'no' %}<span class="stamp pending" style="background:#fee2e2; color:#991b1b;">Rejected</span>{% else %}<span class="stamp neutral">Pending Review</span>{% endif %}
@@ -191,7 +192,7 @@
           <td>
             {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
           </td>
-          <td>{{ claim.sent_date_out|default:"—" }}</td>
+          <td>{{ claim.sent_date_out_bs }}</td>
           <td><a href="{% url 'warranty_detail' claim.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View</a></td>
         </tr>
         {% empty %}

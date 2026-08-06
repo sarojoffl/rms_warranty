@@ -1,4 +1,5 @@
 {% extends "service/base.html" %}
+{% load nepali_tags %}
 {% block page_title %}Search Results{% endblock %}
 {% block content %}
 
@@ -110,7 +111,7 @@
                   <td><a href="{% url 'repair_detail' job.pk %}" class="job-num">{{ job.job_number }}</a></td>
                   <td>{{ job.client.name }}</td>
                   <td>{{ job.machine }}</td>
-                  <td>{{ job.date_in }}</td>
+                  <td>{{ job.date_in_bs }}</td>
                   <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>
                 </tr>
               {% endfor %}
@@ -142,7 +143,7 @@
                   <td><a href="{% url 'warranty_detail' claim.pk %}" class="job-num">{{ claim.job_number }}</a></td>
                   <td>{{ claim.sold_to.name }}</td>
                   <td>{{ claim.machine }}</td>
-                  <td>{{ claim.date_in }}</td>
+                  <td>{{ claim.date_in_bs }}</td>
                   <td>
                     {% if claim.solved %}
                       <span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>

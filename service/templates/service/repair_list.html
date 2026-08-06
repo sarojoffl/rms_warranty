@@ -1,4 +1,5 @@
 {% extends "service/base.html" %}
+{% load nepali_tags %}
 {% block page_title %}Repair Jobs{% endblock %}
 {% block content %}
 
@@ -71,7 +72,7 @@
         {% for job in jobs %}
         <tr onclick="window.location='{% url 'repair_detail' job.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ job.job_number }}</td>
-          <td>{{ job.date_in }}</td>
+          <td>{{ job.date_in_bs }}</td>
           <td><a href="{% url 'client_detail' job.client.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ job.client.name }}</a></td>
           <td>{{ job.machine.machine_type }} — {{ job.machine.brand }}</td>
           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ job.problem_cause }}</td>

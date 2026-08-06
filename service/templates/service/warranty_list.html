@@ -1,4 +1,5 @@
 {% extends "service/base.html" %}
+{% load nepali_tags %}
 {% block page_title %}Warranty Claims{% endblock %}
 {% block content %}
 
@@ -53,7 +54,7 @@
         {% for claim in claims %}
         <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ claim.job_number }}</td>
-          <td>{{ claim.date_in }}</td>
+          <td>{{ claim.date_in_bs }}</td>
           <td><a href="{% url 'client_detail' claim.sold_to.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ claim.sold_to.name }}</a></td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>

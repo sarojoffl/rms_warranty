@@ -509,18 +509,19 @@ def repair_detail(request, pk):
 
 @login_required
 def repair_export_pdf(request, pk):
+    from .nepali_date import ad_to_bs_display
     job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
     rows = [
         ("Job Number", job.job_number),
         ("Status", job.get_status_display()),
-        ("Date In", job.date_in),
+        ("Date In", job.date_in_bs),
         ("Client", job.client.name),
         ("Company", job.client.company_name),
         ("Received By", job.received_by),
         ("Machine", f"{job.machine.machine_type} — {job.machine.brand} {job.machine.model_name}"),
         ("Serial Number", job.machine.serial_number),
         ("Problem / Cause", job.problem_cause),
-        ("Date Out", job.date_out),
+        ("Date Out", job.date_out_bs),
         ("Repaired By", job.repaired_by),
         ("Challan Number", job.challan_number),
         ("Solution / Repair Detail", job.solution_detail),
@@ -529,7 +530,7 @@ def repair_export_pdf(request, pk):
     return build_report_pdf(
         filename=f"repair_{job.job_number}.pdf",
         title="RMS — Repair Job Report",
-        subtitle=f"Generated on {date.today()}",
+        subtitle=f"Generated on {ad_to_bs_display(date.today())}",
         field_rows=rows,
     )
 
@@ -610,28 +611,29 @@ def warranty_detail(request, pk):
 
 @login_required
 def warranty_export_pdf(request, pk):
+    from .nepali_date import ad_to_bs_display
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
     rows = [
         ("Job Number", claim.job_number),
-        ("Date In", claim.date_in),
+        ("Date In", claim.date_in_bs),
         ("Received By", claim.received_by),
         ("Sold To", claim.sold_to.name),
         ("Company", claim.sold_to.company_name),
         ("Bought From", claim.bought_from),
         ("Machine", f"{claim.machine.machine_type} — {claim.machine.brand} {claim.machine.model_name}"),
         ("Serial Number", claim.machine.serial_number),
-        ("Warranty Sent Date", claim.warranty_sent_date),
+        ("Warranty Sent Date", claim.warranty_sent_date_bs),
         ("Claimable", claim.get_claimable_display() if claim.claimable else ""),
         ("Warranty Claimed Report", claim.report_warranty_claimed),
         ("Solved", claim.get_solved_display() if claim.solved else ""),
         ("Cause (if not solved)", claim.not_solved_cause),
-        ("Sent Date (Exit)", claim.sent_date_out),
+        ("Sent Date (Exit)", claim.sent_date_out_bs),
         ("Report Complete", "Yes" if claim.report_complete else "No"),
     ]
     return build_report_pdf(
         filename=f"warranty_{claim.job_number}.pdf",
         title="Warranty Claim Report",
-        subtitle=f"Generated on {date.today()}",
+        subtitle=f"Generated on {ad_to_bs_display(date.today())}",
         field_rows=rows,
     )
 

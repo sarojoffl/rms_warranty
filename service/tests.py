@@ -330,3 +330,30 @@ class TicketFormValidationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(claim_a, response.context["claims"])
 
+    def test_nepali_date_conversion_and_tags(self):
+        from datetime import date
+        from service.nepali_date import ad_to_bs, bs_to_ad, ad_to_bs_display, bs_fiscal_year
+        from service.templatetags.nepali_tags import to_bs, bs_fy
+
+        # Base Reference test: AD 1943-04-14 should convert to BS 2000-01-01
+        self.assertEqual(ad_to_bs(date(1943, 4, 14)), (2000, 1, 1))
+
+        # Test reverse conversion: BS 2000-01-01 should convert back to AD 1943-04-14
+        self.assertEqual(bs_to_ad(2000, 1, 1), date(1943, 4, 14))
+
+        # Test display formats
+        self.assertEqual(ad_to_bs_display(date(1943, 4, 14)), "Baisakh 1, 2000")
+        self.assertEqual(to_bs(date(1943, 4, 14)), "Baisakh 1, 2000")
+
+        # Test fiscal year
+        self.assertEqual(bs_fiscal_year(date(2026, 8, 6)), "2083–84")
+        self.assertEqual(bs_fy(date(2026, 8, 6)), "2083–84")
+
+        # Test model properties
+        job = RepairJob.objects.create(
+            date_in=date(2026, 8, 6), client=self.client_a, received_by="Staff",
+            machine=self.machine, problem_cause="Issue"
+        )
+        self.assertEqual(job.date_in_bs, "Shrawan 21, 2083")
+
+

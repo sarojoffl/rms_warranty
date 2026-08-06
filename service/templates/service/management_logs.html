@@ -1,4 +1,5 @@
 {% extends "service/base.html" %}
+{% load nepali_tags %}
 {% block page_title %}Activity Logs{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -25,7 +26,7 @@
       <tbody>
         {% for log in logs %}
         <tr>
-          <td>{{ log.created_at|date:"j M Y, H:i" }}</td>
+          <td>{{ log.created_at|to_bs }}</td>
           <td>
             <span class="stamp {% if log.area == 'repair' %}neutral{% else %}success{% endif %}">
               {{ log.get_area_display }}
