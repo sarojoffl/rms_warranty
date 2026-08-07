@@ -610,21 +610,28 @@ def repair_export_pdf(request, pk):
         ("Job Number", job.job_number),
         ("Status", job.get_status_display()),
         ("Date In", job.date_in_bs),
-        ("Client", job.client.name),
-        ("Company", job.client.company_name),
-        ("Received By", job.received_by),
-        ("Machine", f"{job.machine.machine_type} — {job.machine.brand} {job.machine.model_name}"),
-        ("Serial Number", job.machine.serial_number),
-        ("Problem / Cause", job.problem_cause),
     ]
+    if job.client.name:
+        rows.append(("Client", job.client.name))
+    if job.client.company_name:
+        rows.append(("Company", job.client.company_name))
+    rows.append(("Received By", job.received_by))
+    rows.append(("Machine", f"{job.machine.machine_type} — {job.machine.brand} {job.machine.model_name}"))
+    if job.machine.serial_number:
+        rows.append(("Serial Number", job.machine.serial_number))
+    rows.append(("Problem / Cause", job.problem_cause))
+
     if job.date_out:
-        rows += [
-            ("Date Out", job.date_out_bs),
-            ("Repaired By", job.repaired_by),
-            ("Challan Number", job.challan_number),
-            ("Solution / Repair Detail", job.solution_detail),
-            ("Taken By", job.taken_by),
-        ]
+        rows.append(("Date Out", job.date_out_bs))
+        if job.repaired_by:
+            rows.append(("Repaired By", job.repaired_by))
+        if job.challan_number:
+            rows.append(("Challan Number", job.challan_number))
+        if job.solution_detail:
+            rows.append(("Solution / Repair Detail", job.solution_detail))
+        if job.taken_by:
+            rows.append(("Taken By", job.taken_by))
+
     return build_report_pdf(
         filename=f"repair_{job.job_number}.pdf",
         title="RMS — Repair Job Report",
@@ -715,22 +722,31 @@ def warranty_export_pdf(request, pk):
         ("Job Number", claim.job_number),
         ("Date In", claim.date_in_bs),
         ("Received By", claim.received_by),
-        ("Sold To", claim.sold_to.name),
-        ("Company", claim.sold_to.company_name),
-        ("Bought From", claim.bought_from),
-        ("Machine", f"{claim.machine.machine_type} — {claim.machine.brand} {claim.machine.model_name}"),
-        ("Serial Number", claim.machine.serial_number),
-        ("Warranty Sent Date", claim.warranty_sent_date_bs),
-        ("Claimable", claim.get_claimable_display() if claim.claimable else ""),
-        ("Warranty Claimed Report", claim.report_warranty_claimed),
     ]
+    if claim.sold_to.name:
+        rows.append(("Sold To", claim.sold_to.name))
+    if claim.sold_to.company_name:
+        rows.append(("Company", claim.sold_to.company_name))
+    if claim.bought_from:
+        rows.append(("Bought From", claim.bought_from))
+    rows.append(("Machine", f"{claim.machine.machine_type} — {claim.machine.brand} {claim.machine.model_name}"))
+    if claim.machine.serial_number:
+        rows.append(("Serial Number", claim.machine.serial_number))
+    if claim.warranty_sent_date:
+        rows.append(("Warranty Sent Date", claim.warranty_sent_date_bs))
+    if claim.claimable:
+        rows.append(("Claimable", claim.get_claimable_display()))
+    if claim.report_warranty_claimed:
+        rows.append(("Warranty Claimed Report", claim.report_warranty_claimed))
+
     if claim.sent_date_out:
-        rows += [
-            ("Solved", claim.get_solved_display() if claim.solved else ""),
-            ("Cause (if not solved)", claim.not_solved_cause),
-            ("Sent Date (Exit)", claim.sent_date_out_bs),
-            ("Report Complete", "Yes" if claim.report_complete else "No"),
-        ]
+        rows.append(("Sent Date (Exit)", claim.sent_date_out_bs))
+        if claim.solved:
+            rows.append(("Solved", claim.get_solved_display()))
+        if claim.solved == WarrantyClaim.RepairStatus.NOT_SOLVED and claim.not_solved_cause:
+            rows.append(("Cause (if not solved)", claim.not_solved_cause))
+        rows.append(("Report Complete", "Yes" if claim.report_complete else "No"))
+
     return build_report_pdf(
         filename=f"warranty_{claim.job_number}.pdf",
         title="Warranty Claim Report",

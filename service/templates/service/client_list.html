@@ -33,8 +33,7 @@
     <table>
       <thead>
         <tr>
-          <th>Contact Person</th>
-          <th>Company</th>
+          <th>Client</th>
           <th>Phone</th>
           <th>Registered Machines</th>
           {% if repair_staff %}
@@ -50,9 +49,11 @@
         {% for client in clients %}
         <tr onclick="window.location='{% url 'client_detail' client.pk %}'" style="cursor:pointer;">
           <td>
-            <strong style="color:var(--color-primary); font-size:0.95rem;">{{ client.name|default:"—" }}</strong>
+            <strong style="color:var(--color-primary); font-size:0.95rem;">{{ client.company_name|default:client.name|default:"—" }}</strong>
+            {% if client.company_name and client.name %}
+            <div style="font-size:0.8rem; color:var(--color-text-muted); margin-top:2px;">{{ client.name }}</div>
+            {% endif %}
           </td>
-          <td>{{ client.company_name|default:"—" }}</td>
           <td>{{ client.phone|default:"—" }}</td>
           <td>
             <span class="stamp neutral" style="font-weight:700;">{{ client.machines_count }} asset(s)</span>

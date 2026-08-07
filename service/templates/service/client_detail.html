@@ -9,8 +9,8 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M15 18l-6-6 6-6"/></svg>
       Back to Client Directory
     </a>
-    <h2>{{ client.name|default:client.company_name }}</h2>
-    {% if client.company_name and client.name %}<p style="color:var(--color-text-muted); font-size:0.9rem; margin-top:2px;">{{ client.company_name }}</p>{% endif %}
+    <h2>{{ client.company_name|default:client.name }}</h2>
+    {% if client.company_name and client.name %}<p style="color:var(--color-text-muted); font-size:0.9rem; margin-top:2px;">{{ client.name }}</p>{% endif %}
   </div>
   <div class="btn-row">
     {% if not management_user %}
@@ -34,12 +34,12 @@
     </div>
     <dl class="metric-list" style="margin:0;">
       <div style="padding:8px 0;">
-        <dt style="font-weight:600; color:var(--color-text-muted);">Contact Person</dt>
-        <dd style="font-weight:700; color:var(--color-text-heading);">{{ client.name|default:"—" }}</dd>
+        <dt style="font-weight:600; color:var(--color-text-muted);">Company Name</dt>
+        <dd style="font-weight:700; color:var(--color-text-heading);">{{ client.company_name|default:"—" }}</dd>
       </div>
       <div style="padding:8px 0;">
-        <dt style="font-weight:600; color:var(--color-text-muted);">Company Name</dt>
-        <dd>{{ client.company_name|default:"—" }}</dd>
+        <dt style="font-weight:600; color:var(--color-text-muted);">Contact Person</dt>
+        <dd>{{ client.name|default:"—" }}</dd>
       </div>
       <div style="padding:8px 0;">
         <dt style="font-weight:600; color:var(--color-text-muted);">Phone Number</dt>
