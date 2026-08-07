@@ -8,7 +8,7 @@
     <span class="eyebrow">Management</span>
     <h2>Business Overview</h2>
   </div>
-  <span class="dashboard-period">Viewing: {{ month_label }}{% if selected_client %} ({{ selected_client.name }}){% endif %}</span>
+  <span class="dashboard-period">Viewing: {{ month_label }}{% if selected_client %} ({{ selected_client }}){% endif %}</span>
 </div>
 
 <!-- Admin Monthly & Client Wise Filter Bar -->
@@ -29,7 +29,7 @@
       <select id="client-filter" name="client_id" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
         <option value="">All Clients</option>
         {% for c in clients %}
-          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
         {% endfor %}
       </select>
     </div>
@@ -55,7 +55,7 @@
       <span style="font-weight:800; color:var(--color-danger-text); display:block; font-size:0.95rem;">Attention Required: {{ delayed_repairs|length }} Repair Job(s) pending for more than 3 days!</span>
       <div class="delayed-list-small">
         {% for job in delayed_repairs %}
-          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client.name }} — {{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
+          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client }} — {{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
         {% endfor %}
       </div>
     </div>

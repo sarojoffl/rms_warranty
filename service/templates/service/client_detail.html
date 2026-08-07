@@ -1,6 +1,6 @@
 {% extends "service/base.html" %}
 {% load nepali_tags %}
-{% block page_title %}Client Details — {{ client.name }}{% endblock %}
+{% block page_title %}Client Details — {{ client }}{% endblock %}
 {% block content %}
 
 <div class="page-head">
@@ -9,13 +9,18 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M15 18l-6-6 6-6"/></svg>
       Back to Client Directory
     </a>
-    <h2>{{ client.name }}</h2>
-    {% if client.company_name %}<p style="color:var(--color-text-muted); font-size:0.9rem; margin-top:2px;">{{ client.company_name }}</p>{% endif %}
+    <h2>{{ client.name|default:client.company_name }}</h2>
+    {% if client.company_name and client.name %}<p style="color:var(--color-text-muted); font-size:0.9rem; margin-top:2px;">{{ client.company_name }}</p>{% endif %}
   </div>
   <div class="btn-row">
     {% if not management_user %}
+    <a href="{% url 'client_edit' client.pk %}" class="btn btn-outline">Edit Client Profile</a>
+    {% if repair_staff %}
     <a href="{% url 'repair_create' %}" class="btn btn-primary">+ New Repair Intake</a>
+    {% endif %}
+    {% if warranty_staff %}
     <a href="{% url 'warranty_create' %}" class="btn btn-outline">+ New Warranty Claim</a>
+    {% endif %}
     {% endif %}
   </div>
 </div>
@@ -29,8 +34,8 @@
     </div>
     <dl class="metric-list" style="margin:0;">
       <div style="padding:8px 0;">
-        <dt style="font-weight:600; color:var(--color-text-muted);">Full Name</dt>
-        <dd style="font-weight:700; color:var(--color-text-heading);">{{ client.name }}</dd>
+        <dt style="font-weight:600; color:var(--color-text-muted);">Contact Person</dt>
+        <dd style="font-weight:700; color:var(--color-text-heading);">{{ client.name|default:"—" }}</dd>
       </div>
       <div style="padding:8px 0;">
         <dt style="font-weight:600; color:var(--color-text-muted);">Company Name</dt>
@@ -113,7 +118,7 @@
         {% empty %}
         <tr><td colspan="5">
           <div class="empty-state compact">
-            <strong>No assets registered for {{ client.name }}</strong>
+            <strong>No assets registered for {{ client }}</strong>
             <p>Add a machine when creating a repair intake.</p>
           </div>
         </td></tr>

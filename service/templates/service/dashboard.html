@@ -24,7 +24,7 @@
     <select name="client_id" id="staff-client-filter" style="padding:6px 12px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
       <option value="">All Clients</option>
       {% for c in clients %}
-        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
       {% endfor %}
     </select>
     {% if client_id %}
@@ -32,7 +32,7 @@
     {% endif %}
   </form>
   {% if selected_client %}
-    <a href="{% url 'client_detail' selected_client.pk %}" class="btn btn-outline btn-sm">View Profile for {{ selected_client.name }} →</a>
+    <a href="{% url 'client_detail' selected_client.pk %}" class="btn btn-outline btn-sm">View Profile for {{ selected_client }} →</a>
   {% endif %}
 </div>
 
@@ -46,7 +46,7 @@
       <span style="font-weight:800; color:var(--color-danger-text); display:block; font-size:0.95rem;">Attention: {{ delayed_repairs|length }} Repair Job(s) pending for more than 3 days!</span>
       <div class="delayed-list-small">
         {% for job in delayed_repairs %}
-          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client.name }} — {{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
+          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client }} — {{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
         {% endfor %}
       </div>
     </div>
@@ -86,7 +86,7 @@
     <div class="activity-list">
       {% for job in recent_repairs %}
       <a class="activity-item" href="{% url 'repair_detail' job.pk %}">
-        <div><span class="job-num">{{ job.job_number }}</span><span class="activity-detail">{{ job.client.name }} · {{ job.machine }}</span></div>
+        <div><span class="job-num">{{ job.job_number }}</span><span class="activity-detail">{{ job.client }} · {{ job.machine }}</span></div>
         <span class="stamp {{ job.status }}">{{ job.get_status_display }}</span>
       </a>
       {% empty %}
@@ -105,7 +105,7 @@
     <div class="activity-list">
       {% for claim in recent_claims %}
       <a class="activity-item" href="{% url 'warranty_detail' claim.pk %}">
-        <div><span class="job-num">{{ claim.job_number }}</span><span class="activity-detail">{{ claim.sold_to.name }} · {{ claim.machine }}</span></div>
+        <div><span class="job-num">{{ claim.job_number }}</span><span class="activity-detail">{{ claim.sold_to }} · {{ claim.machine }}</span></div>
         {% if claim.solved %}<span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span>{% else %}<span class="stamp neutral">Open</span>{% endif %}
       </a>
       {% empty %}

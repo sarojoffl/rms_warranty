@@ -31,7 +31,7 @@
       <select name="client_id" id="client_id" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
         <option value="">All Clients</option>
         {% for c in clients %}
-          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
         {% endfor %}
       </select>
     </div>
@@ -73,7 +73,7 @@
         <tr onclick="window.location='{% url 'repair_detail' job.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ job.job_number }}</td>
           <td>{{ job.date_in_bs }}</td>
-          <td><a href="{% url 'client_detail' job.client.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ job.client.name }}</a></td>
+          <td><a href="{% url 'client_detail' job.client.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ job.client }}</a></td>
           <td>{{ job.machine.machine_type }} — {{ job.machine.brand }}</td>
           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ job.problem_cause }}</td>
           <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>

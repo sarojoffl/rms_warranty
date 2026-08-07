@@ -101,7 +101,7 @@
   <table>
     <tr>
       <td class="label">Name:</td>
-      <td>{{ job.client.name }}</td>
+      <td>{{ job.client.name|default:"—" }}</td>
     </tr>
     {% if job.client.company_name %}
     <tr>

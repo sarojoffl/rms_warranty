@@ -101,7 +101,7 @@
   <table>
     <tr>
       <td class="label">Sold To:</td>
-      <td>{{ claim.sold_to.name }}</td>
+      <td>{{ claim.sold_to.name|default:"—" }}</td>
     </tr>
     {% if claim.sold_to.company_name %}
     <tr>

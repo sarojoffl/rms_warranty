@@ -10,17 +10,19 @@ from django.urls import reverse
 
 class Client(models.Model):
     """A person/company who brings in a machine — used by both RMS and Warranty."""
-    name = models.CharField(max_length=200)
-    company_name = models.CharField(max_length=200, blank=True, help_text="Optional")
+    name = models.CharField(max_length=200, blank=True, help_text="Contact person name (optional if company name provided)")
+    company_name = models.CharField(max_length=200, blank=True, help_text="Company or organisation name (optional if contact name provided)")
     phone = models.CharField(max_length=30, blank=True)
     address = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["name", "company_name"]
 
     def __str__(self):
-        return f"{self.name} ({self.company_name})" if self.company_name else self.name
+        if self.name and self.company_name:
+            return f"{self.name} ({self.company_name})"
+        return self.company_name or self.name or "(Unnamed Client)"
 
 
 class Machine(models.Model):

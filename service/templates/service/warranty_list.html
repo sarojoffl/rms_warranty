@@ -28,7 +28,7 @@
     <select name="client_id" id="client_id" style="padding:6px 12px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
       <option value="">All Clients</option>
       {% for c in clients %}
-        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>
+        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
       {% endfor %}
     </select>
     {% if has_filters %}
@@ -55,7 +55,7 @@
         <tr onclick="window.location='{% url 'warranty_detail' claim.pk %}'" style="cursor:pointer;">
           <td class="job-num">{{ claim.job_number }}</td>
           <td>{{ claim.date_in_bs }}</td>
-          <td><a href="{% url 'client_detail' claim.sold_to.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ claim.sold_to.name }}</a></td>
+          <td><a href="{% url 'client_detail' claim.sold_to.pk %}" onclick="event.stopPropagation();" style="font-weight:600; color:var(--color-primary);">{{ claim.sold_to }}</a></td>
           <td>{{ claim.machine.machine_type }} — {{ claim.machine.brand }}</td>
           <td>
             {% if claim.claimable == 'yes' %}

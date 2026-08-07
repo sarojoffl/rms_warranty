@@ -208,6 +208,7 @@ class TicketFormValidationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "success")
         self.assertIn("id", response.json())
+        # __str__ now returns just the name when no company_name
         self.assertEqual(response.json()["name"], "New AJAX Client")
 
     def test_ajax_client_create_returns_json_errors_on_invalid(self):
@@ -215,13 +216,14 @@ class TicketFormValidationTests(TestCase):
         self.client.force_login(user)
         response = self.client.post(
             reverse("client_create"),
-            {"name": ""},
+            {"name": "", "company_name": ""},  # both blank — triggers either/or validation
             HTTP_X_REQUESTED_WITH="XMLHttpRequest"
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "error")
         self.assertIn("html", response.json())
-        self.assertIn("This field is required", response.json()["html"])
+        # New validation message from ClientForm.clean()
+        self.assertIn("Please fill in at least a Company Name or a Contact Person", response.json()["html"])
 
     @override_settings(
         STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}

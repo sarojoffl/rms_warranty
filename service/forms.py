@@ -10,7 +10,25 @@ from .models import Client, Machine, RepairJob, WarrantyClaim
 class ClientForm(forms.ModelForm):
     class Meta:
         model = Client
-        fields = ["name", "company_name", "phone", "address"]
+        fields = ["company_name", "name", "phone", "address"]
+        labels = {
+            "company_name": "Company Name",
+            "name": "Contact Person",
+        }
+        help_texts = {
+            "company_name": "Fill in the company name, contact person, or both.",
+            "name": "",
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        name = cleaned.get("name", "").strip()
+        company_name = cleaned.get("company_name", "").strip()
+        if not name and not company_name:
+            raise forms.ValidationError(
+                "Please fill in at least a Company Name or a Contact Person."
+            )
+        return cleaned
 
 
 class MachineForm(forms.ModelForm):
@@ -135,3 +153,83 @@ class WarrantyClaimExitForm(forms.ModelForm):
         if cleaned.get("solved") == "not_solved" and not cleaned.get("not_solved_cause"):
             self.add_error("not_solved_cause", "Please state the cause since it wasn't solved.")
         return cleaned
+
+
+# ---------------------------------------------------------------------------
+# Edit forms (full record correction for staff)
+# ---------------------------------------------------------------------------
+
+class RepairJobEditForm(forms.ModelForm):
+    """Full edit form — allows staff to correct any field on an existing Repair Job."""
+    class Meta:
+        model = RepairJob
+        fields = [
+            "date_in", "client", "received_by", "machine", "problem_cause",
+            "status", "date_out", "repaired_by", "challan_number", "solution_detail", "taken_by",
+        ]
+        widgets = {
+            "date_in": forms.DateInput(attrs={"type": "date"}),
+            "date_out": forms.DateInput(attrs={"type": "date"}),
+            "problem_cause": forms.Textarea(attrs={"rows": 3}),
+            "solution_detail": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {
+            "problem_cause": "Problem / Cause",
+            "solution_detail": "Solution / Repair Detail",
+            "challan_number": "Challan Number",
+            "repaired_by": "Repaired By",
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        date_in = cleaned.get("date_in")
+        date_out = cleaned.get("date_out")
+        status = cleaned.get("status")
+        if date_in and date_out and date_out < date_in:
+            self.add_error("date_out", "Date out cannot be before the intake date.")
+        if status == RepairJob.Status.COMPLETED:
+            if not date_out:
+                self.add_error("date_out", "A completed job needs a date out.")
+            if not cleaned.get("repaired_by", "").strip():
+                self.add_error("repaired_by", "Repaired By is required to complete the job.")
+            if not cleaned.get("solution_detail", "").strip():
+                self.add_error("solution_detail", "Solution / Repair Detail is required to complete the job.")
+            if not cleaned.get("taken_by", "").strip():
+                self.add_error("taken_by", "Record who collected the machine before completing the job.")
+            if not cleaned.get("challan_number", "").strip():
+                self.add_error("challan_number", "Challan number is required before the item can be exited.")
+        return cleaned
+
+
+class WarrantyClaimEditForm(forms.ModelForm):
+    """Full edit form — allows staff to correct any field on an existing Warranty Claim."""
+    class Meta:
+        model = WarrantyClaim
+        fields = [
+            "date_in", "received_by", "sold_to", "bought_from", "machine",
+            "warranty_sent_date", "claimable", "report_warranty_claimed",
+            "solved", "not_solved_cause", "sent_date_out", "report_complete",
+        ]
+        widgets = {
+            "date_in": forms.DateInput(attrs={"type": "date"}),
+            "warranty_sent_date": forms.DateInput(attrs={"type": "date"}),
+            "sent_date_out": forms.DateInput(attrs={"type": "date"}),
+            "report_warranty_claimed": forms.Textarea(attrs={"rows": 3}),
+            "not_solved_cause": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        date_in = cleaned.get("date_in")
+        sent_date_out = cleaned.get("sent_date_out")
+        solved = cleaned.get("solved")
+        if date_in and sent_date_out and sent_date_out < date_in:
+            self.add_error("sent_date_out", "Sent date cannot be before the intake date.")
+        if solved and not sent_date_out:
+            self.add_error("sent_date_out", "Provide the sent date when closing the claim.")
+        if cleaned.get("solved") == "not_solved" and not cleaned.get("not_solved_cause"):
+            self.add_error("not_solved_cause", "Please state the cause since it wasn't solved.")
+        if cleaned.get("claimable") == "yes" and not cleaned.get("report_warranty_claimed"):
+            self.add_error("report_warranty_claimed", "Please describe the warranty claim.")
+        return cleaned
+

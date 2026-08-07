@@ -14,6 +14,7 @@ from django.urls import reverse
 from .forms import (
     ClientForm, MachineForm, RepairJobEntryForm, RepairJobExitForm,
     WarrantyClaimEntryForm, WarrantyClaimExitForm,
+    RepairJobEditForm, WarrantyClaimEditForm,
 )
 from .models import ActivityLog, Client, Machine, RepairJob, WarrantyClaim
 from .pdf_utils import build_report_pdf
@@ -154,7 +155,7 @@ def client_create(request):
             client = form.save()
             if is_ajax:
                 return JsonResponse({"status": "success", "id": client.pk, "name": str(client)})
-            messages.success(request, f"Client '{client.name}' added.")
+            messages.success(request, f"Client '{str(client)}' added.")
             return redirect(_safe_next(request, "repair_create"))
         else:
             if is_ajax:
@@ -173,6 +174,24 @@ def client_create(request):
         
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Client",
+        "next": request.GET.get("next", ""),
+    })
+
+
+@helpdesk_required
+def client_edit(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    if request.method == "POST":
+        form = ClientForm(request.POST, instance=client)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Client '{str(client)}' updated.")
+            return redirect("client_detail", pk=client.pk)
+    else:
+        form = ClientForm(instance=client)
+    return render(request, "service/quick_form.html", {
+        "form": form,
+        "title": "Edit Client",
         "next": request.GET.get("next", ""),
     })
 
@@ -751,3 +770,33 @@ def repair_receipt(request, pk):
 def warranty_receipt(request, pk):
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
     return render(request, "service/warranty_receipt.html", {"claim": claim})
+
+
+@repair_required
+def repair_edit(request, pk):
+    job = get_object_or_404(RepairJob, pk=pk)
+    if request.method == "POST":
+        form = RepairJobEditForm(request.POST, instance=job)
+        if form.is_valid():
+            form.save()
+            log_activity(request, ActivityLog.Area.REPAIR, job.job_number, "Repair job edited", job.problem_cause[:255])
+            messages.success(request, f"Repair job {job.job_number} updated.")
+            return redirect("repair_detail", pk=job.pk)
+    else:
+        form = RepairJobEditForm(instance=job)
+    return render(request, "service/repair_edit_form.html", {"form": form, "job": job})
+
+
+@warranty_required
+def warranty_edit(request, pk):
+    claim = get_object_or_404(WarrantyClaim, pk=pk)
+    if request.method == "POST":
+        form = WarrantyClaimEditForm(request.POST, instance=claim)
+        if form.is_valid():
+            form.save()
+            log_activity(request, ActivityLog.Area.WARRANTY, claim.job_number, "Warranty claim edited", claim.report_warranty_claimed[:255])
+            messages.success(request, f"Warranty claim {claim.job_number} updated.")
+            return redirect("warranty_detail", pk=claim.pk)
+    else:
+        form = WarrantyClaimEditForm(instance=claim)
+    return render(request, "service/warranty_edit_form.html", {"form": form, "claim": claim})

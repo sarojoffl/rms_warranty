@@ -30,12 +30,45 @@
       </div>
       <div class="form-group">
         <label for="id_password">Password</label>
-        {{ form.password }}
+        <div class="password-wrapper" style="position:relative; display:flex; width:100%;">
+          {{ form.password }}
+          <button type="button" class="password-toggle" id="password-toggle" aria-label="Toggle password visibility" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; color:var(--color-ink-muted);">
+            <svg class="eye-open" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px; height:20px;"><circle cx="12" cy="12" r="3"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <svg class="eye-closed" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px; height:20px; display:none;"><path d="M12 5c-4.478 0-8.268 2.943-9.543 7 1.275 4.057 5.065 7 9.543 7 .993 0 1.953-.138 2.863-.395m-4.242-4.242a3 3 0 11-4.243-4.243m0 0L3 3m18 18l-3-3m-3.228-3.228a10.45 10.45 0 004.293-5.774M12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.895 7.895L21 21m-3.228-3.228l-3.65-3.65"/></svg>
+          </button>
+        </div>
       </div>
       <input type="hidden" name="next" value="{{ next }}">
-      <button type="submit" class="btn btn-primary">Sign In</button>
+      <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Sign In</button>
     </form>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('id_password');
+    const toggleButton = document.getElementById('password-toggle');
+    const eyeOpen = toggleButton.querySelector('.eye-open');
+    const eyeClosed = toggleButton.querySelector('.eye-closed');
+
+    if (passwordInput && toggleButton) {
+      // Ensure input has correct padding
+      passwordInput.style.paddingRight = '44px';
+      passwordInput.style.width = '100%';
+
+      toggleButton.addEventListener('click', function() {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          eyeOpen.style.display = 'none';
+          eyeClosed.style.display = 'block';
+        } else {
+          passwordInput.type = 'password';
+          eyeOpen.style.display = 'block';
+          eyeClosed.style.display = 'none';
+        }
+      });
+    }
+  });
+</script>
 </body>
 </html>

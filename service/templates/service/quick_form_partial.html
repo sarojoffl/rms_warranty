@@ -1,5 +1,12 @@
 <form method="post" novalidate id="modal-form">
   {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="notice error" style="margin-bottom:16px;">
+      {% for error in form.non_field_errors %}
+        <span>{{ error }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
   <div class="form-grid">
     {% for field in form %}
       <div class="form-group {% if field.name == 'details' or field.name == 'address' %}full{% endif %}" id="field-{{ field.name }}">

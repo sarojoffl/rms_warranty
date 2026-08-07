@@ -33,7 +33,7 @@
     <table>
       <thead>
         <tr>
-          <th>Client Name</th>
+          <th>Contact Person</th>
           <th>Company</th>
           <th>Phone</th>
           <th>Registered Machines</th>
@@ -50,7 +50,7 @@
         {% for client in clients %}
         <tr onclick="window.location='{% url 'client_detail' client.pk %}'" style="cursor:pointer;">
           <td>
-            <strong style="color:var(--color-primary); font-size:0.95rem;">{{ client.name }}</strong>
+            <strong style="color:var(--color-primary); font-size:0.95rem;">{{ client.name|default:"—" }}</strong>
           </td>
           <td>{{ client.company_name|default:"—" }}</td>
           <td>{{ client.phone|default:"—" }}</td>

@@ -46,7 +46,7 @@
             <tbody>
               {% for client in clients %}
                 <tr onclick="window.location='{% url 'client_detail' client.pk %}'" style="cursor:pointer;">
-                  <td><strong style="color:var(--color-primary);">{{ client.name }}</strong></td>
+                  <td><strong style="color:var(--color-primary);">{{ client }}</strong></td>
                   <td>{{ client.company_name|default:"—" }}</td>
                   <td>{{ client.phone|default:"—" }}</td>
                   <td>{{ client.address|default:"—" }}</td>
@@ -80,7 +80,7 @@
                   <td><span class="job-num">{{ machine.machine_type }}</span></td>
                   <td>{{ machine.brand }} {{ machine.model_name }}</td>
                   <td class="mono">{{ machine.serial_number|default:"—" }}</td>
-                  <td>{{ machine.client.name }}</td>
+                  <td>{{ machine.client }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -109,7 +109,7 @@
               {% for job in repairs %}
                 <tr>
                   <td><a href="{% url 'repair_detail' job.pk %}" class="job-num">{{ job.job_number }}</a></td>
-                  <td>{{ job.client.name }}</td>
+                  <td>{{ job.client }}</td>
                   <td>{{ job.machine }}</td>
                   <td>{{ job.date_in_bs }}</td>
                   <td><span class="stamp {{ job.status }}">{{ job.get_status_display }}</span></td>
@@ -141,7 +141,7 @@
               {% for claim in claims %}
                 <tr>
                   <td><a href="{% url 'warranty_detail' claim.pk %}" class="job-num">{{ claim.job_number }}</a></td>
-                  <td>{{ claim.sold_to.name }}</td>
+                  <td>{{ claim.sold_to }}</td>
                   <td>{{ claim.machine }}</td>
                   <td>{{ claim.date_in_bs }}</td>
                   <td>
