@@ -13,7 +13,7 @@
   <div class="card-body">
     <form method="post" novalidate>
       {% csrf_token %}
-      
+
       <h3 style="margin-top:0; margin-bottom:16px; font-size:1.1rem; color:var(--color-primary);">Intake Information</h3>
       <div class="form-grid" style="margin-bottom:24px;">
         <div class="form-group">
@@ -58,6 +58,7 @@
         </div>
       </div>
 
+      {% if claim.sent_date_out %}
       <h3 style="margin-bottom:16px; font-size:1.1rem; color:var(--color-primary); border-top:1px solid var(--color-line); padding-top:20px;">Exit Information</h3>
       <div class="form-grid">
         <div class="form-group">
@@ -81,6 +82,12 @@
           {{ form.report_complete.errors }}
         </div>
       </div>
+      {% else %}
+      <div style="border-top:1px solid var(--color-line); padding-top:20px; font-size:0.9rem; color:var(--color-muted, #888);">
+        This claim hasn't been exited yet. To complete it, use
+        <a href="{% url 'warranty_exit' claim.pk %}">Complete Warranty</a>.
+      </div>
+      {% endif %}
 
       <div class="form-actions" style="margin-top:24px;">
         <button type="submit" class="btn btn-primary">Save Changes</button>

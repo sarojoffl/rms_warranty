@@ -13,6 +13,7 @@ urlpatterns = [
     path("clients/<int:pk>/edit/", views.client_edit, name="client_edit"),
     path("clients/new/", views.helpdesk_required(views.client_create), name="client_create"),
     path("machines/new/", views.helpdesk_required(views.machine_create), name="machine_create"),
+    path("machines/<int:pk>/edit/", views.helpdesk_required(views.machine_edit), name="machine_edit"),
     path("machines/options/", views.helpdesk_required(views.machine_options), name="machine_options"),
 
     # RMS
@@ -22,7 +23,6 @@ urlpatterns = [
     path("repair/<int:pk>/edit/", views.repair_edit, name="repair_edit"),
     path("repair/<int:pk>/exit/", views.helpdesk_required(views.repair_exit), name="repair_exit"),
     path("repair/<int:pk>/pdf/", views.repair_export_pdf, name="repair_export_pdf"),
-    path("repair/<int:pk>/receipt/", views.repair_receipt, name="repair_receipt"),
 
     # Warranty
     path("warranty/", views.warranty_list, name="warranty_list"),
@@ -31,7 +31,6 @@ urlpatterns = [
     path("warranty/<int:pk>/edit/", views.warranty_edit, name="warranty_edit"),
     path("warranty/<int:pk>/exit/", views.helpdesk_required(views.warranty_exit), name="warranty_exit"),
     path("warranty/<int:pk>/pdf/", views.warranty_export_pdf, name="warranty_export_pdf"),
-    path("warranty/<int:pk>/receipt/", views.warranty_receipt, name="warranty_receipt"),
     
     # Universal Search
     path("search/", views.global_search, name="global_search"),

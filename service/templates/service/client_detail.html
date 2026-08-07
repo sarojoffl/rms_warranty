@@ -104,6 +104,7 @@
           <th>Model Name</th>
           <th>Serial Number</th>
           <th>Details</th>
+          {% if not management_user %}<th>Action</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -114,9 +115,12 @@
           <td>{{ machine.model_name|default:"—" }}</td>
           <td><code style="background:#f3f4f6; padding:2px 6px; border-radius:4px; font-family:monospace;">{{ machine.serial_number|default:"—" }}</code></td>
           <td style="font-size:0.875rem; color:var(--color-text-muted);">{{ machine.details|default:"—" }}</td>
+          {% if not management_user %}
+          <td><a href="{% url 'machine_edit' machine.pk %}?next={{ request.path }}" class="btn btn-outline btn-sm">Edit</a></td>
+          {% endif %}
         </tr>
         {% empty %}
-        <tr><td colspan="5">
+        <tr><td colspan="{% if not management_user %}6{% else %}5{% endif %}">
           <div class="empty-state compact">
             <strong>No assets registered for {{ client }}</strong>
             <p>Add a machine when creating a repair intake.</p>

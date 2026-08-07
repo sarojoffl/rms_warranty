@@ -90,7 +90,6 @@ class RepairJobExitForm(forms.ModelForm):
         if date_out and self.instance.date_in and date_out < self.instance.date_in:
             self.add_error("date_out", "Date out cannot be before the intake date.")
 
-        # Required only when marking as Completed (exited)
         if status == RepairJob.Status.COMPLETED:
             if not date_out:
                 self.add_error("date_out", "A completed job needs a date out.")
@@ -156,11 +155,10 @@ class WarrantyClaimExitForm(forms.ModelForm):
 
 
 # ---------------------------------------------------------------------------
-# Edit forms (full record correction for staff)
+# Edit forms
 # ---------------------------------------------------------------------------
 
 class RepairJobEditForm(forms.ModelForm):
-    """Full edit form — allows staff to correct any field on an existing Repair Job."""
     class Meta:
         model = RepairJob
         fields = [
@@ -180,8 +178,21 @@ class RepairJobEditForm(forms.ModelForm):
             "repaired_by": "Repaired By",
         }
 
+    EXIT_FIELDS = ["date_out", "repaired_by", "challan_number", "solution_detail", "taken_by"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_exited = bool(self.instance and self.instance.pk and self.instance.date_out)
+        if not self.is_exited:
+            for name in self.EXIT_FIELDS:
+                del self.fields[name]
+            self.fields["status"].disabled = True
+
     def clean(self):
         cleaned = super().clean()
+        if not self.is_exited:
+            return cleaned
+
         date_in = cleaned.get("date_in")
         date_out = cleaned.get("date_out")
         status = cleaned.get("status")
@@ -202,7 +213,6 @@ class RepairJobEditForm(forms.ModelForm):
 
 
 class WarrantyClaimEditForm(forms.ModelForm):
-    """Full edit form — allows staff to correct any field on an existing Warranty Claim."""
     class Meta:
         model = WarrantyClaim
         fields = [
@@ -218,8 +228,20 @@ class WarrantyClaimEditForm(forms.ModelForm):
             "not_solved_cause": forms.Textarea(attrs={"rows": 3}),
         }
 
+    EXIT_FIELDS = ["solved", "not_solved_cause", "sent_date_out", "report_complete"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_exited = bool(self.instance and self.instance.pk and self.instance.sent_date_out)
+        if not self.is_exited:
+            for name in self.EXIT_FIELDS:
+                del self.fields[name]
+
     def clean(self):
         cleaned = super().clean()
+        if not self.is_exited:
+            return cleaned
+
         date_in = cleaned.get("date_in")
         sent_date_out = cleaned.get("sent_date_out")
         solved = cleaned.get("solved")
@@ -232,4 +254,3 @@ class WarrantyClaimEditForm(forms.ModelForm):
         if cleaned.get("claimable") == "yes" and not cleaned.get("report_warranty_claimed"):
             self.add_error("report_warranty_claimed", "Please describe the warranty claim.")
         return cleaned
-

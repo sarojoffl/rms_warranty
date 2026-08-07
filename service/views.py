@@ -178,7 +178,7 @@ def client_create(request):
     })
 
 
-@helpdesk_required
+@login_required
 def client_edit(request, pk):
     client = get_object_or_404(Client, pk=pk)
     if request.method == "POST":
@@ -234,6 +234,24 @@ def machine_create(request):
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Machine",
         "next": request.GET.get("next", ""),
+    })
+
+@login_required
+def machine_edit(request, pk):
+    machine = get_object_or_404(Machine, pk=pk)
+    fallback = reverse("client_detail", args=[machine.client.pk])
+    if request.method == "POST":
+        form = MachineForm(request.POST, instance=machine)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Machine '{machine}' updated.")
+            return redirect(_safe_next(request, fallback))
+    else:
+        form = MachineForm(instance=machine)
+    return render(request, "service/quick_form.html", {
+        "form": form,
+        "title": "Edit Machine",
+        "next": request.GET.get("next", fallback),
     })
 
 
@@ -598,12 +616,15 @@ def repair_export_pdf(request, pk):
         ("Machine", f"{job.machine.machine_type} — {job.machine.brand} {job.machine.model_name}"),
         ("Serial Number", job.machine.serial_number),
         ("Problem / Cause", job.problem_cause),
-        ("Date Out", job.date_out_bs),
-        ("Repaired By", job.repaired_by),
-        ("Challan Number", job.challan_number),
-        ("Solution / Repair Detail", job.solution_detail),
-        ("Taken By", job.taken_by),
     ]
+    if job.date_out:
+        rows += [
+            ("Date Out", job.date_out_bs),
+            ("Repaired By", job.repaired_by),
+            ("Challan Number", job.challan_number),
+            ("Solution / Repair Detail", job.solution_detail),
+            ("Taken By", job.taken_by),
+        ]
     return build_report_pdf(
         filename=f"repair_{job.job_number}.pdf",
         title="RMS — Repair Job Report",
@@ -702,11 +723,14 @@ def warranty_export_pdf(request, pk):
         ("Warranty Sent Date", claim.warranty_sent_date_bs),
         ("Claimable", claim.get_claimable_display() if claim.claimable else ""),
         ("Warranty Claimed Report", claim.report_warranty_claimed),
-        ("Solved", claim.get_solved_display() if claim.solved else ""),
-        ("Cause (if not solved)", claim.not_solved_cause),
-        ("Sent Date (Exit)", claim.sent_date_out_bs),
-        ("Report Complete", "Yes" if claim.report_complete else "No"),
     ]
+    if claim.sent_date_out:
+        rows += [
+            ("Solved", claim.get_solved_display() if claim.solved else ""),
+            ("Cause (if not solved)", claim.not_solved_cause),
+            ("Sent Date (Exit)", claim.sent_date_out_bs),
+            ("Report Complete", "Yes" if claim.report_complete else "No"),
+        ]
     return build_report_pdf(
         filename=f"warranty_{claim.job_number}.pdf",
         title="Warranty Claim Report",
@@ -758,18 +782,6 @@ def global_search(request):
         "repairs":  repairs,
         "claims":   claims,
     })
-
-
-@repair_required
-def repair_receipt(request, pk):
-    job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
-    return render(request, "service/repair_receipt.html", {"job": job})
-
-
-@warranty_required
-def warranty_receipt(request, pk):
-    claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
-    return render(request, "service/warranty_receipt.html", {"claim": claim})
 
 
 @repair_required
