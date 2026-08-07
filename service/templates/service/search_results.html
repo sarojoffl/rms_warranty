@@ -89,7 +89,7 @@
       </section>
     {% endif %}
 
-    {% if repairs %}
+    {% if repair_staff and repairs %}
       <section class="card" style="margin-bottom: 24px;">
         <div class="card-header">
           <h3>Repair Jobs ({{ repairs|length }})</h3>
@@ -121,7 +121,7 @@
       </section>
     {% endif %}
 
-    {% if claims %}
+    {% if warranty_staff and claims %}
       <section class="card" style="margin-bottom: 24px;">
         <div class="card-header">
           <h3>Warranty Claims ({{ claims|length }})</h3>

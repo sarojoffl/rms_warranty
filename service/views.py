@@ -19,11 +19,31 @@ from .models import ActivityLog, Client, Machine, RepairJob, WarrantyClaim
 from .pdf_utils import build_report_pdf
 
 MANAGEMENT_GROUP = "Management"
+REPAIR_GROUP    = "Repair Desk"
+WARRANTY_GROUP  = "Warranty Desk"
 
 
 def is_management_user(user):
     """Management group members receive the reporting-only area."""
     return user.is_authenticated and user.groups.filter(name=MANAGEMENT_GROUP).exists()
+
+
+def is_repair_staff(user):
+    """True for Repair Desk, Management, and superusers."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user.groups.filter(name__in=[REPAIR_GROUP, MANAGEMENT_GROUP]).exists()
+
+
+def is_warranty_staff(user):
+    """True for Warranty Desk, Management, and superusers."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user.groups.filter(name__in=[WARRANTY_GROUP, MANAGEMENT_GROUP]).exists()
 
 
 def helpdesk_required(view_func):
@@ -33,6 +53,34 @@ def helpdesk_required(view_func):
     def wrapped_view(request, *args, **kwargs):
         if is_management_user(request.user):
             return redirect("management_dashboard")
+        return view_func(request, *args, **kwargs)
+    return wrapped_view
+
+
+def repair_required(view_func):
+    """Restrict view to Repair Desk staff (or Management/Superuser)."""
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(request, *args, **kwargs):
+        if not is_repair_staff(request.user):
+            return HttpResponseForbidden(
+                "You do not have access to Repair Jobs. "
+                "Please contact your administrator."
+            )
+        return view_func(request, *args, **kwargs)
+    return wrapped_view
+
+
+def warranty_required(view_func):
+    """Restrict view to Warranty Desk staff (or Management/Superuser)."""
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(request, *args, **kwargs):
+        if not is_warranty_staff(request.user):
+            return HttpResponseForbidden(
+                "You do not have access to Warranty Claims. "
+                "Please contact your administrator."
+            )
         return view_func(request, *args, **kwargs)
     return wrapped_view
 
@@ -59,11 +107,15 @@ class RoleAwareLoginView(auth_views.LoginView):
     """Send users to the dashboard that matches their granted access."""
 
     def get_success_url(self):
-        if is_management_user(self.request.user):
+        user = self.request.user
+
+        if is_management_user(user):
             return reverse("management_dashboard")
+
         redirect_to = self.get_redirect_url()
         if redirect_to:
             return redirect_to
+
         return reverse("dashboard")
 
 
@@ -235,38 +287,44 @@ def client_detail(request, pk):
 @login_required
 def dashboard(request):
     """Operational overview for staff at the start of a service-desk shift."""
-    repairs = RepairJob.objects.select_related("client", "machine")
-    claims = WarrantyClaim.objects.select_related("sold_to", "machine")
-    
+    user = request.user
+    can_repair   = is_repair_staff(user)
+    can_warranty = is_warranty_staff(user)
+
+    repairs = RepairJob.objects.select_related("client", "machine") if can_repair else RepairJob.objects.none()
+    claims  = WarrantyClaim.objects.select_related("sold_to", "machine") if can_warranty else WarrantyClaim.objects.none()
+
     client_id = request.GET.get("client_id")
     selected_client = None
     if client_id and client_id.isdigit():
         selected_client = Client.objects.filter(pk=client_id).first()
         if selected_client:
             repairs = repairs.filter(client=selected_client)
-            claims = claims.filter(sold_to=selected_client)
+            claims  = claims.filter(sold_to=selected_client)
 
     three_days_ago = date.today() - timedelta(days=3)
-    delayed_repairs = RepairJob.objects.filter(
-        status=RepairJob.Status.PENDING,
-        date_in__lte=three_days_ago
-    )
-    if selected_client:
-        delayed_repairs = delayed_repairs.filter(client=selected_client)
-    delayed_repairs = delayed_repairs.select_related("client", "machine")
+    delayed_repairs = RepairJob.objects.none()
+    if can_repair:
+        delayed_repairs = RepairJob.objects.filter(
+            status=RepairJob.Status.PENDING,
+            date_in__lte=three_days_ago
+        )
+        if selected_client:
+            delayed_repairs = delayed_repairs.filter(client=selected_client)
+        delayed_repairs = delayed_repairs.select_related("client", "machine")
 
     clients = Client.objects.all()
 
     return render(request, "service/dashboard.html", {
         "client_count": Client.objects.count(),
         "machine_count": Machine.objects.count(),
-        "repair_total": repairs.count(),
-        "repair_pending": repairs.filter(status=RepairJob.Status.PENDING).count(),
-        "claim_total": claims.count(),
-        "claim_open": claims.filter(solved="").count(),
-        "claim_review": claims.filter(claimable="").count(),
+        "repair_total":   repairs.count(),
+        "repair_pending":  repairs.filter(status=RepairJob.Status.PENDING).count(),
+        "claim_total":    claims.count(),
+        "claim_open":     claims.filter(solved="").count(),
+        "claim_review":   claims.filter(claimable="").count(),
         "recent_repairs": repairs[:5],
-        "recent_claims": claims[:5],
+        "recent_claims":  claims[:5],
         "delayed_repairs": delayed_repairs,
         "clients": clients,
         "selected_client": selected_client,
@@ -434,7 +492,7 @@ def management_logs(request):
     })
 
 
-@login_required
+@repair_required
 def repair_list(request):
     jobs = RepairJob.objects.select_related("client", "machine")
     status = request.GET.get("status", "").strip()
@@ -469,7 +527,7 @@ def repair_list(request):
     })
 
 
-@login_required
+@repair_required
 def repair_create(request):
     """Entry form."""
     if request.method == "POST":
@@ -484,7 +542,7 @@ def repair_create(request):
     return render(request, "service/repair_form.html", {"form": form, "mode": "entry"})
 
 
-@login_required
+@repair_required
 def repair_exit(request, pk):
     """Exit form — other details auto-fill from the entry via the template context."""
     job = get_object_or_404(RepairJob, pk=pk)
@@ -501,13 +559,13 @@ def repair_exit(request, pk):
     return render(request, "service/repair_form.html", {"form": form, "mode": "exit", "job": job})
 
 
-@login_required
+@repair_required
 def repair_detail(request, pk):
     job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
     return render(request, "service/repair_detail.html", {"job": job})
 
 
-@login_required
+@repair_required
 def repair_export_pdf(request, pk):
     from .nepali_date import ad_to_bs_display
     job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
@@ -539,7 +597,7 @@ def repair_export_pdf(request, pk):
 # Warranty workflow
 # ---------------------------------------------------------------------------
 
-@login_required
+@warranty_required
 def warranty_list(request):
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
     claimable = request.GET.get("claimable", "").strip()
@@ -571,7 +629,7 @@ def warranty_list(request):
     })
 
 
-@login_required
+@warranty_required
 def warranty_create(request):
     """Entry form."""
     if request.method == "POST":
@@ -586,7 +644,7 @@ def warranty_create(request):
     return render(request, "service/warranty_form.html", {"form": form, "mode": "entry"})
 
 
-@login_required
+@warranty_required
 def warranty_exit(request, pk):
     """Exit form — auto-fills entry details in the template."""
     claim = get_object_or_404(WarrantyClaim, pk=pk)
@@ -603,13 +661,13 @@ def warranty_exit(request, pk):
     return render(request, "service/warranty_form.html", {"form": form, "mode": "exit", "claim": claim})
 
 
-@login_required
+@warranty_required
 def warranty_detail(request, pk):
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
     return render(request, "service/warranty_detail.html", {"claim": claim})
 
 
-@login_required
+@warranty_required
 def warranty_export_pdf(request, pk):
     from .nepali_date import ad_to_bs_display
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
@@ -642,11 +700,11 @@ def warranty_export_pdf(request, pk):
 def global_search(request):
     from django.db.models import Q
     query = request.GET.get("q", "").strip()
-    clients = []
+    clients  = []
     machines = []
-    repairs = []
-    claims = []
-    
+    repairs  = []
+    claims   = []
+
     if query:
         clients = Client.objects.filter(
             Q(name__icontains=query) |
@@ -659,35 +717,37 @@ def global_search(request):
             Q(model_name__icontains=query) |
             Q(serial_number__icontains=query)
         ).select_related("client")
-        repairs = RepairJob.objects.filter(
-            Q(job_number__icontains=query) |
-            Q(problem_cause__icontains=query) |
-            Q(client__name__icontains=query) |
-            Q(received_by__icontains=query)
-        ).select_related("client", "machine")
-        claims = WarrantyClaim.objects.filter(
-            Q(job_number__icontains=query) |
-            Q(sold_to__name__icontains=query) |
-            Q(bought_from__icontains=query) |
-            Q(received_by__icontains=query)
-        ).select_related("sold_to", "machine")
-        
+        if is_repair_staff(request.user):
+            repairs = RepairJob.objects.filter(
+                Q(job_number__icontains=query) |
+                Q(problem_cause__icontains=query) |
+                Q(client__name__icontains=query) |
+                Q(received_by__icontains=query)
+            ).select_related("client", "machine")
+        if is_warranty_staff(request.user):
+            claims = WarrantyClaim.objects.filter(
+                Q(job_number__icontains=query) |
+                Q(sold_to__name__icontains=query) |
+                Q(bought_from__icontains=query) |
+                Q(received_by__icontains=query)
+            ).select_related("sold_to", "machine")
+
     return render(request, "service/search_results.html", {
         "query": query,
-        "clients": clients,
+        "clients":  clients,
         "machines": machines,
-        "repairs": repairs,
-        "claims": claims,
+        "repairs":  repairs,
+        "claims":   claims,
     })
 
 
-@login_required
+@repair_required
 def repair_receipt(request, pk):
     job = get_object_or_404(RepairJob.objects.select_related("client", "machine"), pk=pk)
     return render(request, "service/repair_receipt.html", {"job": job})
 
 
-@login_required
+@warranty_required
 def warranty_receipt(request, pk):
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
     return render(request, "service/warranty_receipt.html", {"claim": claim})

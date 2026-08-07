@@ -121,6 +121,8 @@ class TicketFormValidationTests(TestCase):
             machine=self.machine, problem_cause="Will not power on",
         )
         user = get_user_model().objects.create_user(username="manager", password="test-password")
+        user.groups.add(Group.objects.get(name="Repair Desk"))
+        user.groups.add(Group.objects.get(name="Warranty Desk"))
         self.client.force_login(user)
 
         response = self.client.get(reverse("dashboard"))
@@ -226,6 +228,8 @@ class TicketFormValidationTests(TestCase):
     )
     def test_new_routes_return_ok_for_logged_in_staff(self):
         user = get_user_model().objects.create_user(username="staff-routes", password="test-password")
+        user.groups.add(Group.objects.get(name="Repair Desk"))
+        user.groups.add(Group.objects.get(name="Warranty Desk"))
         self.client.force_login(user)
         
         # Test global search
@@ -298,6 +302,8 @@ class TicketFormValidationTests(TestCase):
     )
     def test_repair_and_warranty_list_client_filters(self):
         staff = get_user_model().objects.create_user(username="staff_filter", password="test-password")
+        staff.groups.add(Group.objects.get(name="Repair Desk"))
+        staff.groups.add(Group.objects.get(name="Warranty Desk"))
         self.client.force_login(staff)
 
         job_a = RepairJob.objects.create(
@@ -355,5 +361,47 @@ class TicketFormValidationTests(TestCase):
             machine=self.machine, problem_cause="Issue"
         )
         self.assertEqual(job.date_in_bs, "Shrawan 21, 2083")
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_repair_desk_only_access(self):
+        user = get_user_model().objects.create_user(username="repair-only", password="test-password")
+        user.groups.add(Group.objects.get(name="Repair Desk"))
+        self.client.force_login(user)
+
+        # Access to repair views should be allowed
+        self.assertEqual(self.client.get(reverse("repair_list")).status_code, 200)
+
+        # Access to warranty views should be forbidden
+        self.assertEqual(self.client.get(reverse("warranty_list")).status_code, 403)
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_warranty_desk_only_access(self):
+        user = get_user_model().objects.create_user(username="warranty-only", password="test-password")
+        user.groups.add(Group.objects.get(name="Warranty Desk"))
+        self.client.force_login(user)
+
+        # Access to warranty views should be allowed
+        self.assertEqual(self.client.get(reverse("warranty_list")).status_code, 200)
+
+        # Access to repair views should be forbidden
+        self.assertEqual(self.client.get(reverse("repair_list")).status_code, 403)
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_dual_role_access(self):
+        user = get_user_model().objects.create_user(username="dual-user", password="test-password")
+        user.groups.add(Group.objects.get(name="Repair Desk"))
+        user.groups.add(Group.objects.get(name="Warranty Desk"))
+        self.client.force_login(user)
+
+        # Both should be allowed
+        self.assertEqual(self.client.get(reverse("repair_list")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("warranty_list")).status_code, 200)
+
 
 

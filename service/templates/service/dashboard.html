@@ -9,8 +9,12 @@
     <h2>Operations Dashboard</h2>
   </div>
   <div class="btn-row">
+    {% if repair_staff %}
     <a href="{% url 'repair_create' %}" class="btn btn-primary">+ Repair Intake</a>
+    {% endif %}
+    {% if warranty_staff %}
     <a href="{% url 'warranty_create' %}" class="btn btn-outline">+ Warranty Claim</a>
+    {% endif %}
   </div>
 </div>
 
@@ -32,7 +36,7 @@
   {% endif %}
 </div>
 
-{% if delayed_repairs %}
+{% if delayed_repairs and repair_staff %}
 <div class="delayed-alert" role="alert">
   <div class="alert-content">
     <svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -51,16 +55,20 @@
 {% endif %}
 
 <section class="stat-strip dashboard-stats" aria-label="Service desk totals">
+  {% if repair_staff %}
   <a href="{% url 'repair_list' %}?status=pending" class="stat-card amber stat-link">
     <span class="stat-label">Repairs awaiting action</span>
     <span class="stat-value">{{ repair_pending }}</span>
     <span class="stat-note">of {{ repair_total }} total repairs</span>
   </a>
+  {% endif %}
+  {% if warranty_staff %}
   <a href="{% url 'warranty_list' %}" class="stat-card stat-link">
     <span class="stat-label">Open warranty claims</span>
     <span class="stat-value">{{ claim_open }}</span>
     <span class="stat-note">{{ claim_review }} awaiting review</span>
   </a>
+  {% endif %}
   <div class="stat-card">
     <span class="stat-label">Registered assets</span>
     <span class="stat-value">{{ machine_count }}</span>
@@ -69,6 +77,7 @@
 </section>
 
 <div class="dashboard-grid">
+  {% if repair_staff %}
   <section class="card">
     <div class="card-header">
       <h3>Recent Repair Jobs</h3>
@@ -85,7 +94,9 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
+  {% if warranty_staff %}
   <section class="card">
     <div class="card-header">
       <h3>Recent Warranty Claims</h3>
@@ -102,5 +113,6 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 </div>
 {% endblock %}

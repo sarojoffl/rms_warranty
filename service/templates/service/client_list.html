@@ -37,8 +37,12 @@
           <th>Company</th>
           <th>Phone</th>
           <th>Registered Machines</th>
+          {% if repair_staff %}
           <th>Repair Jobs</th>
+          {% endif %}
+          {% if warranty_staff %}
           <th>Warranty Claims</th>
+          {% endif %}
           <th>Action</th>
         </tr>
       </thead>
@@ -53,21 +57,25 @@
           <td>
             <span class="stamp neutral" style="font-weight:700;">{{ client.machines_count }} asset(s)</span>
           </td>
+          {% if repair_staff %}
           <td>
             <span class="stamp pending" style="font-weight:700;">{{ client.repairs_count }} job(s)</span>
           </td>
+          {% endif %}
+          {% if warranty_staff %}
           <td>
             <span class="stamp completed" style="font-weight:700;">{{ client.claims_count }} claim(s)</span>
           </td>
+          {% endif %}
           <td>
             <a href="{% url 'client_detail' client.pk %}" onclick="event.stopPropagation();" class="btn btn-outline btn-sm">View Details →</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7">
+        <tr><td colspan="100">
           <div class="empty-state">
             <div class="empty-icon">
-              <svg fill="none" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+               <svg fill="none" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
             <strong>No clients found</strong>
             <p>{% if query %}No results matching "{{ query }}".{% else %}Add your first client to get started.{% endif %}</p>

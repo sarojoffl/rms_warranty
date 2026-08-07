@@ -58,6 +58,7 @@
       <span class="stat-note">Machines on record</span>
     </div>
 
+    {% if repair_staff %}
     <div class="stat-card amber">
       <span class="stat-label">Pending Repairs</span>
       <span class="stat-value">{{ pending_repairs }}</span>
@@ -67,14 +68,17 @@
     <div class="stat-card success">
       <span class="stat-label">Completed Repairs</span>
       <span class="stat-value">{{ completed_repairs }}</span>
-      <span class="stat-note">Delivered & closed</span>
+      <span class="stat-note">Delivered &amp; closed</span>
     </div>
+    {% endif %}
 
+    {% if warranty_staff %}
     <div class="stat-card">
       <span class="stat-label">Warranty Claims</span>
       <span class="stat-value">{{ total_claims }}</span>
       <span class="stat-note">{{ open_claims }} open claim(s)</span>
     </div>
+    {% endif %}
   </div>
 </div>
 
@@ -120,6 +124,7 @@
 </div>
 
 <!-- Repair Jobs History (RMS) -->
+{% if repair_staff %}
 <div class="card" style="margin-bottom:24px;">
   <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
     <h3>Repair Jobs History (RMS) ({{ total_repairs }})</h3>
@@ -160,8 +165,10 @@
     </table>
   </div>
 </div>
+{% endif %}
 
 <!-- Warranty Claims History -->
+{% if warranty_staff %}
 <div class="card">
   <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
     <h3>Warranty Claims History ({{ total_claims }})</h3>
@@ -206,5 +213,6 @@
     </table>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
