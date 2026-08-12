@@ -30,7 +30,8 @@ urlpatterns = [
     path("warranty/<int:pk>/", views.warranty_detail, name="warranty_detail"),
     path("warranty/<int:pk>/edit/", views.warranty_edit, name="warranty_edit"),
     path("warranty/<int:pk>/exit/", views.helpdesk_required(views.warranty_exit), name="warranty_exit"),
-    path("warranty/<int:pk>/pdf/", views.warranty_export_pdf, name="warranty_export_pdf"),
+    path("warranty/<int:pk>/pdf/client/", views.warranty_export_pdf_client, name="warranty_export_pdf_client"),
+    path("warranty/<int:pk>/pdf/claim/", views.warranty_export_pdf_claim, name="warranty_export_pdf_claim"),
     
     # Universal Search
     path("search/", views.global_search, name="global_search"),

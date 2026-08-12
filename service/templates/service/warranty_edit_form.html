@@ -47,6 +47,11 @@
           {{ form.warranty_sent_date.errors }}
         </div>
         <div class="form-group">
+          <label>Delivered By</label>
+          {{ form.delivered_by }}
+          {{ form.delivered_by.errors }}
+        </div>
+        <div class="form-group">
           <label>Claimable</label>
           {{ form.claimable }}
           {{ form.claimable.errors }}
@@ -70,6 +75,11 @@
           <label>Sent Date (Exit)</label>
           {{ form.sent_date_out }}
           {{ form.sent_date_out.errors }}
+        </div>
+        <div class="form-group">
+          <label>Taken By</label>
+          {{ form.taken_by }}
+          {{ form.taken_by.errors }}
         </div>
         <div class="form-group full" id="field-not_solved_cause">
           <label>Cause (if not solved)</label>

@@ -25,7 +25,7 @@
     <div class="ticket-fields">
       <div class="ticket-field"><span class="tf-label">Date In</span><span class="tf-value">{{ job.date_in_bs }}</span></div>
       <div class="ticket-field"><span class="tf-label">Received By</span><span class="tf-value">{{ job.received_by }}</span></div>
-      <div class="ticket-field"><span class="tf-label">Client</span><span class="tf-value">{{ job.client.name }}{% if job.client.company_name %} — {{ job.client.company_name }}{% endif %}</span></div>
+      <div class="ticket-field"><span class="tf-label">Client</span><span class="tf-value">{{ job.client.company_name|default:job.client.name }}{% if job.client.company_name and job.client.name %} — {{ job.client.name }}{% endif %}</span></div>
       <div class="ticket-field"><span class="tf-label">Phone</span><span class="tf-value">{{ job.client.phone|default:"—" }}</span></div>
       <div class="ticket-field"><span class="tf-label">Machine</span><span class="tf-value">{{ job.machine.machine_type }} — {{ job.machine.brand }} {{ job.machine.model_name }}</span></div>
       <div class="ticket-field"><span class="tf-label">Serial No.</span><span class="tf-value mono">{{ job.machine.serial_number|default:"—" }}</span></div>

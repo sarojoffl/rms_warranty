@@ -140,6 +140,7 @@ class WarrantyClaim(models.Model):
     bought_from = models.CharField(max_length=200, blank=True)
     machine = models.ForeignKey(Machine, on_delete=models.PROTECT, related_name="warranty_claims")
     warranty_sent_date = models.DateField(null=True, blank=True, help_text="Editable")
+    delivered_by = models.CharField(max_length=150, blank=True, help_text="Staff member who delivered the machine to the distributor/manufacturer")
     claimable = models.CharField(max_length=10, choices=Claimable.choices, blank=True)
     report_warranty_claimed = models.TextField(blank=True, help_text="Filled if claimable = Yes")
 
@@ -147,6 +148,7 @@ class WarrantyClaim(models.Model):
     solved = models.CharField(max_length=15, choices=RepairStatus.choices, blank=True)
     not_solved_cause = models.TextField(blank=True, help_text="Required if not solved")
     sent_date_out = models.DateField(null=True, blank=True)
+    taken_by = models.CharField(max_length=150, blank=True, help_text="Who collected the machine after the claim was resolved")
     report_complete = models.BooleanField(default=False, help_text="Complete or not")
 
     created_at = models.DateTimeField(auto_now_add=True)

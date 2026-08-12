@@ -113,12 +113,15 @@ class WarrantyClaimEntryForm(forms.ModelForm):
         model = WarrantyClaim
         fields = [
             "date_in", "received_by", "sold_to", "bought_from", "machine",
-            "warranty_sent_date", "claimable", "report_warranty_claimed",
+            "warranty_sent_date", "delivered_by", "claimable", "report_warranty_claimed",
         ]
         widgets = {
             "date_in": forms.DateInput(attrs={"type": "date"}),
             "warranty_sent_date": forms.DateInput(attrs={"type": "date"}),
             "report_warranty_claimed": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {
+            "delivered_by": "Delivered By (to distributor)",
         }
 
     def clean(self):
@@ -135,22 +138,28 @@ class WarrantyClaimEntryForm(forms.ModelForm):
 class WarrantyClaimExitForm(forms.ModelForm):
     class Meta:
         model = WarrantyClaim
-        fields = ["solved", "not_solved_cause", "sent_date_out", "report_complete"]
+        fields = ["solved", "not_solved_cause", "sent_date_out", "taken_by", "report_complete"]
         widgets = {
             "sent_date_out": forms.DateInput(attrs={"type": "date"}),
             "not_solved_cause": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {
+            "taken_by": "Taken By (customer pickup)",
         }
 
     def clean(self):
         cleaned = super().clean()
         sent_date_out = cleaned.get("sent_date_out")
         solved = cleaned.get("solved")
+        taken_by = cleaned.get("taken_by", "").strip()
         if sent_date_out and self.instance.date_in and sent_date_out < self.instance.date_in:
             self.add_error("sent_date_out", "Sent date cannot be before the intake date.")
         if solved and not sent_date_out:
             self.add_error("sent_date_out", "Provide the sent date when closing the claim.")
         if cleaned.get("solved") == "not_solved" and not cleaned.get("not_solved_cause"):
             self.add_error("not_solved_cause", "Please state the cause since it wasn't solved.")
+        if solved and not taken_by:
+            self.add_error("taken_by", "Record who collected the machine before closing the claim.")
         return cleaned
 
 
@@ -217,8 +226,8 @@ class WarrantyClaimEditForm(forms.ModelForm):
         model = WarrantyClaim
         fields = [
             "date_in", "received_by", "sold_to", "bought_from", "machine",
-            "warranty_sent_date", "claimable", "report_warranty_claimed",
-            "solved", "not_solved_cause", "sent_date_out", "report_complete",
+            "warranty_sent_date", "delivered_by", "claimable", "report_warranty_claimed",
+            "solved", "not_solved_cause", "sent_date_out", "taken_by", "report_complete",
         ]
         widgets = {
             "date_in": forms.DateInput(attrs={"type": "date"}),
@@ -227,8 +236,12 @@ class WarrantyClaimEditForm(forms.ModelForm):
             "report_warranty_claimed": forms.Textarea(attrs={"rows": 3}),
             "not_solved_cause": forms.Textarea(attrs={"rows": 3}),
         }
+        labels = {
+            "delivered_by": "Delivered By (to distributor)",
+            "taken_by": "Taken By (customer pickup)",
+        }
 
-    EXIT_FIELDS = ["solved", "not_solved_cause", "sent_date_out", "report_complete"]
+    EXIT_FIELDS = ["solved", "not_solved_cause", "sent_date_out", "taken_by", "report_complete"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

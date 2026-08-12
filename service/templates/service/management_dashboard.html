@@ -45,17 +45,34 @@
   {% endif %}
 </div>
 
-{% if delayed_repairs %}
+{% if delayed_groups %}
 <div class="delayed-alert" role="alert">
   <div class="alert-content">
     <svg class="alert-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
     </svg>
-    <div>
-      <span style="font-weight:800; color:var(--color-danger-text); display:block; font-size:0.95rem;">Attention Required: {{ delayed_repairs|length }} Repair Job(s) pending for more than 3 days!</span>
-      <div class="delayed-list-small">
-        {% for job in delayed_repairs %}
-          <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a> ({{ job.client }} — {{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
+    <div style="flex:1;">
+      <span style="font-weight:800; color:var(--color-danger-text); display:block; font-size:0.95rem;">
+        Attention Required: {{ delayed_repairs|length }} Repair Job(s) pending for more than 3 days — across {{ delayed_groups|length }} client{{ delayed_groups|length|pluralize }}
+      </span>
+
+      <div class="delayed-groups" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+        {% for group in delayed_groups %}
+        <div class="delayed-group-row" style="font-size:0.84rem; color:var(--color-ink-muted);">
+          <strong style="color:var(--color-ink);">{{ group.client }}</strong>
+          <span class="stamp neutral" style="margin-left:6px;">{{ group.count }} pending</span>
+          <div class="delayed-list-small" style="margin-top:4px;">
+            {% for job in group.preview %}
+              <a href="{% url 'repair_detail' job.pk %}" class="delayed-job-link">{{ job.job_number }}</a>
+              ({{ job.date_in_bs }} / {{ job.date_in|timesince }} ago){% if not forloop.last %}, {% endif %}
+            {% endfor %}
+            {% if group.remaining > 0 %}
+              <a href="{% url 'repair_list' %}?status=pending&client_id={{ group.client.pk }}" class="delayed-job-link">
+                +{{ group.remaining }} more →
+              </a>
+            {% endif %}
+          </div>
+        </div>
         {% endfor %}
       </div>
     </div>
@@ -74,7 +91,7 @@
     <span class="stat-value">{{ repairs_received_month }}</span>
     <span class="stat-note">since {{ month_start|date:"j M" }}</span>
   </div>
-  
+
   <div class="stat-card success">
     <div class="icon-box" style="background:var(--color-success-bg); color:var(--color-success);">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -93,9 +110,9 @@
       </div>
     </div>
   </div>
-  
-  <div class="stat-card {% if delayed_repairs %}amber{% endif %}">
-    <div class="icon-box" style="{% if delayed_repairs %}background:var(--color-amber-bg); color:var(--color-amber);{% endif %}">
+
+  <div class="stat-card {% if delayed_groups %}amber{% endif %}">
+    <div class="icon-box" style="{% if delayed_groups %}background:var(--color-amber-bg); color:var(--color-amber);{% endif %}">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
@@ -103,7 +120,7 @@
     <span class="stat-label">Current backlog</span>
     <span class="stat-value">{{ repair_backlog }}</span>
     <span class="stat-note">
-      {% if delayed_repairs %}
+      {% if delayed_groups %}
         <strong style="color:var(--color-danger-text);">{{ delayed_repairs|length }} delayed (>3 days)</strong>
       {% else %}
         All caught up
@@ -122,7 +139,7 @@
       <canvas id="intakesChart"></canvas>
     </div>
   </div>
-  
+
   <div class="card">
     <div class="card-header">
       <h3>Asset Distribution by Type</h3>
@@ -153,7 +170,7 @@
       </div>
     </dl>
   </section>
-  
+
   <section class="card metric-panel">
     <div class="card-header">
       <h3>Warranty Overview</h3>
@@ -218,7 +235,6 @@
     if (!chartDataEl) return;
     var data = JSON.parse(chartDataEl.textContent);
 
-    // Chart 1: Intakes Trend
     var ctx1 = document.getElementById('intakesChart').getContext('2d');
     new Chart(ctx1, {
       type: 'line',
@@ -271,7 +287,6 @@
       }
     });
 
-    // Chart 2: Asset breakdown
     var ctx2 = document.getElementById('assetsChart').getContext('2d');
     new Chart(ctx2, {
       type: 'doughnut',

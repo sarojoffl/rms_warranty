@@ -1,11 +1,15 @@
 import calendar
+import json
 from datetime import date, datetime, timedelta
 from functools import wraps
+from itertools import groupby
+from operator import attrgetter
 
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -22,6 +26,18 @@ from .pdf_utils import build_report_pdf
 MANAGEMENT_GROUP = "Management"
 REPAIR_GROUP    = "Repair Desk"
 WARRANTY_GROUP  = "Warranty Desk"
+
+
+def business_days_ago(base_date, days, excluded_weekday=5):
+    """Walk back `days` business days from base_date, skipping the given
+    weekday (default 5 = Saturday, Nepal's weekly closure day)."""
+    d = base_date
+    counted = 0
+    while counted < days:
+        d -= timedelta(days=1)
+        if d.weekday() != excluded_weekday:
+            counted += 1
+    return d
 
 
 def is_management_user(user):
@@ -165,13 +181,13 @@ def client_create(request):
                 return JsonResponse({"status": "error", "html": html})
     else:
         form = ClientForm()
-    
+
     if is_ajax:
         html = render_to_string("service/quick_form_partial.html", {
             "form": form, "title": "New Client",
         }, request=request)
         return JsonResponse({"status": "success", "html": html})
-        
+
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Client",
         "next": request.GET.get("next", ""),
@@ -224,13 +240,13 @@ def machine_create(request):
         if client_id:
             initial["client"] = client_id
         form = MachineForm(initial=initial)
-        
+
     if is_ajax:
         html = render_to_string("service/quick_form_partial.html", {
             "form": form, "title": "New Machine",
         }, request=request)
         return JsonResponse({"status": "success", "html": html})
-        
+
     return render(request, "service/quick_form.html", {
         "form": form, "title": "New Machine",
         "next": request.GET.get("next", ""),
@@ -256,15 +272,12 @@ def machine_edit(request, pk):
 
 
 # ---------------------------------------------------------------------------
-# RMS (Repair) workflow
-# ---------------------------------------------------------------------------
 # Client Directory & Client Wise Details (Accessible to both Admin & Staff)
 # ---------------------------------------------------------------------------
 
 @login_required
 def client_list(request):
     """Client Directory view accessible by both Admin and Staff."""
-    from django.db.models import Q, Count
     query = request.GET.get("q", "").strip()
     clients = Client.objects.annotate(
         machines_count=Count("machines", distinct=True),
@@ -297,7 +310,6 @@ def client_detail(request, pk):
     repair_jobs = client.repair_jobs.select_related("machine").order_by("-created_at")
     warranty_claims = client.warranty_claims.select_related("machine").order_by("-created_at")
 
-    # Client-specific stats
     total_repairs = repair_jobs.count()
     pending_repairs = repair_jobs.filter(status=RepairJob.Status.PENDING).count()
     completed_repairs = repair_jobs.filter(status=RepairJob.Status.COMPLETED).count()
@@ -339,8 +351,10 @@ def dashboard(request):
             repairs = repairs.filter(client=selected_client)
             claims  = claims.filter(sold_to=selected_client)
 
-    three_days_ago = date.today() - timedelta(days=3)
+    three_days_ago = business_days_ago(date.today(), 3)
     delayed_repairs = RepairJob.objects.none()
+    delayed_groups = []
+
     if can_repair:
         delayed_repairs = RepairJob.objects.filter(
             status=RepairJob.Status.PENDING,
@@ -348,7 +362,19 @@ def dashboard(request):
         )
         if selected_client:
             delayed_repairs = delayed_repairs.filter(client=selected_client)
-        delayed_repairs = delayed_repairs.select_related("client", "machine")
+        delayed_repairs = delayed_repairs.select_related("client", "machine").order_by(
+            "client__name", "date_in"
+        )
+
+        for client_obj, jobs_iter in groupby(delayed_repairs, key=attrgetter("client")):
+            jobs = list(jobs_iter)
+            delayed_groups.append({
+                "client": client_obj,
+                "count": len(jobs),
+                "preview": jobs[:3],
+                "remaining": max(0, len(jobs) - 3),
+            })
+        delayed_groups.sort(key=lambda g: g["count"], reverse=True)
 
     clients = Client.objects.all()
 
@@ -363,6 +389,7 @@ def dashboard(request):
         "recent_repairs": repairs[:5],
         "recent_claims":  claims[:5],
         "delayed_repairs": delayed_repairs,
+        "delayed_groups": delayed_groups,
         "clients": clients,
         "selected_client": selected_client,
         "client_id": int(client_id) if client_id and client_id.isdigit() else None,
@@ -372,9 +399,6 @@ def dashboard(request):
 @management_required
 def management_dashboard(request):
     """Read-only KPI overview for management users with Monthly and Client filters."""
-    import json
-    from django.db.models import Count
-
     today = date.today()
     selected_month = request.GET.get("month", "").strip()
     client_id = request.GET.get("client_id", "").strip()
@@ -382,7 +406,6 @@ def management_dashboard(request):
     if not selected_month:
         selected_month = today.strftime("%Y-%m")
 
-    # Base querysets
     repairs = RepairJob.objects.select_related("client", "machine")
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
 
@@ -411,7 +434,7 @@ def management_dashboard(request):
             dt = today
             year, month_num = today.year, today.month
             selected_month = today.strftime("%Y-%m")
-        
+
         last_day = calendar.monthrange(year, month_num)[1]
         month_start = date(year, month_num, 1)
         month_end = date(year, month_num, last_day)
@@ -439,13 +462,25 @@ def management_dashboard(request):
         if job.date_out and job.date_in
     ]
 
-    three_days_ago = today - timedelta(days=3)
+    # --- Delayed repairs (Saturday-aware 3-business-day threshold), grouped by client ---
+    three_days_ago = business_days_ago(today, 3)
     delayed_repairs = repairs.filter(
         status=RepairJob.Status.PENDING,
         date_in__lte=three_days_ago
-    )
+    ).select_related("client", "machine").order_by("client__name", "date_in")
 
-    # Intakes Trend Chart data
+    delayed_groups = []
+    for client_obj, jobs_iter in groupby(delayed_repairs, key=attrgetter("client")):
+        jobs = list(jobs_iter)
+        delayed_groups.append({
+            "client": client_obj,
+            "count": len(jobs),
+            "preview": jobs[:3],
+            "remaining": max(0, len(jobs) - 3),
+        })
+    delayed_groups.sort(key=lambda g: g["count"], reverse=True)
+
+    # --- Intakes Trend Chart data (Saturdays excluded) ---
     chart_days = []
     chart_repairs = []
     chart_claims = []
@@ -453,13 +488,19 @@ def management_dashboard(request):
     if not is_all_time and month_start and month_end:
         cur = month_start
         while cur <= month_end:
-            chart_days.append(cur.strftime("%d %b"))
-            chart_repairs.append(repairs.filter(date_in=cur).count())
-            chart_claims.append(claims.filter(date_in=cur).count())
+            if cur.weekday() != 5:  # skip Saturday
+                chart_days.append(cur.strftime("%d %b"))
+                chart_repairs.append(repairs.filter(date_in=cur).count())
+                chart_claims.append(claims.filter(date_in=cur).count())
             cur += timedelta(days=1)
     else:
-        for i in range(6, -1, -1):
-            day = today - timedelta(days=i)
+        days_back = []
+        cur = today
+        while len(days_back) < 7:
+            if cur.weekday() != 5:  # skip Saturday
+                days_back.append(cur)
+            cur -= timedelta(days=1)
+        for day in reversed(days_back):
             chart_days.append(day.strftime("%b %d"))
             chart_repairs.append(repairs.filter(date_in=day).count())
             chart_claims.append(claims.filter(date_in=day).count())
@@ -481,7 +522,6 @@ def management_dashboard(request):
         "machine_counts": chart_machine_counts,
     })
 
-    # Available months list for dropdown selector (past 12 months)
     available_months = []
     curr_m = today.replace(day=1)
     for _ in range(12):
@@ -514,6 +554,7 @@ def management_dashboard(request):
         "claims_last_30_days": claims.filter(date_in__gte=today - timedelta(days=30)).count(),
         "recent_logs": ActivityLog.objects.select_related("actor")[:6],
         "delayed_repairs": delayed_repairs,
+        "delayed_groups": delayed_groups,
         "chart_json": chart_json,
     })
 
@@ -715,7 +756,8 @@ def warranty_detail(request, pk):
 
 
 @warranty_required
-def warranty_export_pdf(request, pk):
+def warranty_export_pdf_client(request, pk):
+    """Customer Receipt — handed to the customer at drop-off / pickup."""
     from .nepali_date import ad_to_bs_display
     claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
     rows = [
@@ -724,20 +766,14 @@ def warranty_export_pdf(request, pk):
         ("Received By", claim.received_by),
     ]
     if claim.sold_to.name:
-        rows.append(("Sold To", claim.sold_to.name))
+        rows.append(("Client", claim.sold_to.name))
     if claim.sold_to.company_name:
         rows.append(("Company", claim.sold_to.company_name))
-    if claim.bought_from:
-        rows.append(("Bought From", claim.bought_from))
     rows.append(("Machine", f"{claim.machine.machine_type} — {claim.machine.brand} {claim.machine.model_name}"))
     if claim.machine.serial_number:
         rows.append(("Serial Number", claim.machine.serial_number))
     if claim.warranty_sent_date:
         rows.append(("Warranty Sent Date", claim.warranty_sent_date_bs))
-    if claim.claimable:
-        rows.append(("Claimable", claim.get_claimable_display()))
-    if claim.report_warranty_claimed:
-        rows.append(("Warranty Claimed Report", claim.report_warranty_claimed))
 
     if claim.sent_date_out:
         rows.append(("Sent Date (Exit)", claim.sent_date_out_bs))
@@ -745,11 +781,44 @@ def warranty_export_pdf(request, pk):
             rows.append(("Solved", claim.get_solved_display()))
         if claim.solved == WarrantyClaim.RepairStatus.NOT_SOLVED and claim.not_solved_cause:
             rows.append(("Cause (if not solved)", claim.not_solved_cause))
+        if claim.taken_by:
+            rows.append(("Taken By", claim.taken_by))
         rows.append(("Report Complete", "Yes" if claim.report_complete else "No"))
 
     return build_report_pdf(
-        filename=f"warranty_{claim.job_number}.pdf",
-        title="Warranty Claim Report",
+        filename=f"warranty_{claim.job_number}_receipt.pdf",
+        title="Warranty Claim — Customer Receipt",
+        subtitle=f"Generated on {ad_to_bs_display(date.today())}",
+        field_rows=rows,
+    )
+
+
+@warranty_required
+def warranty_export_pdf_claim(request, pk):
+    """Claim / Dispatch Note — sent with the machine to the distributor/manufacturer."""
+    from .nepali_date import ad_to_bs_display
+    claim = get_object_or_404(WarrantyClaim.objects.select_related("sold_to", "machine"), pk=pk)
+    rows = [
+        ("Job Number", claim.job_number),
+        ("Date In", claim.date_in_bs),
+        ("Machine", f"{claim.machine.machine_type} — {claim.machine.brand} {claim.machine.model_name}"),
+    ]
+    if claim.machine.serial_number:
+        rows.append(("Serial Number", claim.machine.serial_number))
+    if claim.bought_from:
+        rows.append(("Bought From", claim.bought_from))
+    if claim.warranty_sent_date:
+        rows.append(("Warranty Sent Date", claim.warranty_sent_date_bs))
+    if claim.delivered_by:
+        rows.append(("Delivered By", claim.delivered_by))
+    if claim.claimable:
+        rows.append(("Claimable", claim.get_claimable_display()))
+    if claim.report_warranty_claimed:
+        rows.append(("Warranty Claimed Report", claim.report_warranty_claimed))
+
+    return build_report_pdf(
+        filename=f"warranty_{claim.job_number}_claim.pdf",
+        title="Warranty Claim — Dispatch Note",
         subtitle=f"Generated on {ad_to_bs_display(date.today())}",
         field_rows=rows,
     )
@@ -757,7 +826,6 @@ def warranty_export_pdf(request, pk):
 
 @login_required
 def global_search(request):
-    from django.db.models import Q
     query = request.GET.get("q", "").strip()
     clients  = []
     machines = []

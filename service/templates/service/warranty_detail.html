@@ -30,6 +30,7 @@
       <div class="ticket-field"><span class="tf-label">Machine</span><span class="tf-value">{{ claim.machine.machine_type }} — {{ claim.machine.brand }} {{ claim.machine.model_name }}</span></div>
       <div class="ticket-field"><span class="tf-label">Serial No.</span><span class="tf-value mono">{{ claim.machine.serial_number|default:"—" }}</span></div>
       <div class="ticket-field"><span class="tf-label">Warranty Sent</span><span class="tf-value">{{ claim.warranty_sent_date_bs }}</span></div>
+      <div class="ticket-field"><span class="tf-label">Delivered By</span><span class="tf-value">{{ claim.delivered_by|default:"—" }}</span></div>
     </div>
     {% if claim.report_warranty_claimed %}
     <div class="ticket-fields single" style="margin-top:14px;">
@@ -46,6 +47,7 @@
       <div class="ticket-fields">
         <div class="ticket-field"><span class="tf-label">Solved</span><span class="tf-value"><span class="stamp {{ claim.solved }}">{{ claim.get_solved_display }}</span></span></div>
         <div class="ticket-field"><span class="tf-label">Sent Date (Exit)</span><span class="tf-value">{{ claim.sent_date_out_bs }}</span></div>
+        <div class="ticket-field"><span class="tf-label">Taken By</span><span class="tf-value">{{ claim.taken_by|default:"—" }}</span></div>
         <div class="ticket-field"><span class="tf-label">Report</span><span class="tf-value">{% if claim.report_complete %}Complete{% else %}Incomplete{% endif %}</span></div>
       </div>
       {% if claim.not_solved_cause %}
@@ -59,9 +61,13 @@
   </div>
 
   <div class="ticket-foot">
-    <a href="{% url 'warranty_export_pdf' claim.pk %}" class="btn btn-outline">
+    <a href="{% url 'warranty_export_pdf_client' claim.pk %}" class="btn btn-outline">
       <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Print Claim Slip (PDF)
+      Print Customer Receipt (PDF)
+    </a>
+    <a href="{% url 'warranty_export_pdf_claim' claim.pk %}" class="btn btn-outline">
+      <svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print Dispatch Note (PDF)
     </a>
     {% if not management_user %}
       <a href="{% url 'warranty_edit' claim.pk %}" class="btn btn-outline">Edit Ticket</a>

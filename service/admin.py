@@ -31,4 +31,11 @@ class WarrantyClaimAdmin(admin.ModelAdmin):
     search_fields = ("job_number", "sold_to__name", "machine__serial_number")
     readonly_fields = ("job_number",)
 
-admin.site.register(ActivityLog)
+
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ("job_number", "area", "action", "actor", "created_at")
+    list_filter = ("area", "action")
+    search_fields = ("job_number", "action", "details", "actor__username")
+    readonly_fields = ("actor", "area", "job_number", "action", "details", "created_at")
+    date_hierarchy = "created_at"
