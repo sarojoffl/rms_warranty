@@ -101,6 +101,15 @@ class RepairJobExitForm(forms.ModelForm):
                 self.add_error("taken_by", "Record who collected the machine before completing the job.")
             if not challan_number:
                 self.add_error("challan_number", "Challan number is required before the item can be exited.")
+
+        elif status == RepairJob.Status.NOT_REPAIRED:
+            if not date_out:
+                self.add_error("date_out", "A date out is required when returning the item.")
+            if not taken_by:
+                self.add_error("taken_by", "Record who collected the machine.")
+            if not solution_detail:
+                self.add_error("solution_detail", "Please describe why the item could not be repaired.")
+
         return cleaned
 
 
@@ -218,6 +227,13 @@ class RepairJobEditForm(forms.ModelForm):
                 self.add_error("taken_by", "Record who collected the machine before completing the job.")
             if not cleaned.get("challan_number", "").strip():
                 self.add_error("challan_number", "Challan number is required before the item can be exited.")
+        elif status == RepairJob.Status.NOT_REPAIRED:
+            if not date_out:
+                self.add_error("date_out", "A date out is required when returning the item.")
+            if not cleaned.get("taken_by", "").strip():
+                self.add_error("taken_by", "Record who collected the machine.")
+            if not cleaned.get("solution_detail", "").strip():
+                self.add_error("solution_detail", "Please describe why the item could not be repaired.")
         return cleaned
 
 

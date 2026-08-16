@@ -38,16 +38,28 @@
   <div class="perforation"></div>
 
   <div class="ticket-section">
-    <h4>Exit — Customer Copy</h4>
+    {% if job.is_not_repaired %}
+      <h4 style="color:#92400e;">Item Returned — Not Repaired</h4>
+    {% else %}
+      <h4>Exit — Customer Copy</h4>
+    {% endif %}
+
     {% if job.date_out %}
       <div class="ticket-fields">
         <div class="ticket-field"><span class="tf-label">Date Out</span><span class="tf-value">{{ job.date_out_bs }}</span></div>
-        <div class="ticket-field"><span class="tf-label">Repaired By</span><span class="tf-value">{{ job.repaired_by|default:"—" }}</span></div>
+        {% if not job.is_not_repaired %}
+          <div class="ticket-field"><span class="tf-label">Repaired By</span><span class="tf-value">{{ job.repaired_by|default:"—" }}</span></div>
+        {% endif %}
         <div class="ticket-field"><span class="tf-label">Taken By</span><span class="tf-value">{{ job.taken_by|default:"—" }}</span></div>
-        <div class="ticket-field"><span class="tf-label">Challan No.</span><span class="tf-value mono">{{ job.challan_number|default:"—" }}</span></div>
+        {% if not job.is_not_repaired %}
+          <div class="ticket-field"><span class="tf-label">Challan No.</span><span class="tf-value mono">{{ job.challan_number|default:"—" }}</span></div>
+        {% endif %}
       </div>
       <div class="ticket-fields single" style="margin-top:14px;">
-      <div class="ticket-field"><span class="tf-label">Solution / Repair Detail</span><span class="tf-value">{{ job.solution_detail|default:"—"|linebreaksbr }}</span></div>
+        <div class="ticket-field">
+          <span class="tf-label">{% if job.is_not_repaired %}Reason / Cause{% else %}Solution / Repair Detail{% endif %}</span>
+          <span class="tf-value">{{ job.solution_detail|default:"—"|linebreaksbr }}</span>
+        </div>
       </div>
     {% else %}
       <div class="ticket-field"><span class="tf-value empty">Not yet completed — this half of the ticket fills in on exit.</span></div>
@@ -62,9 +74,9 @@
     {% if not management_user %}
       <a href="{% url 'repair_edit' job.pk %}" class="btn btn-outline">Edit Ticket</a>
     {% endif %}
-    {% if not management_user and not job.is_completed %}
+    {% if not management_user and not job.is_closed %}
       <a href="{% url 'repair_exit' job.pk %}" class="btn btn-success">Complete Exit Ticket</a>
-    {% elif not management_user %}
+    {% elif not management_user and job.is_closed %}
       <a href="{% url 'repair_exit' job.pk %}" class="btn btn-outline">Edit Exit Details</a>
     {% endif %}
   </div>

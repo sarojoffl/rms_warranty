@@ -244,17 +244,15 @@ class TicketFormValidationTests(TestCase):
             date_in=date.today(), client=self.client_a, received_by="Asha",
             machine=self.machine, problem_cause="Will not power on",
         )
-        response = self.client.get(reverse("repair_receipt", args=[job.pk]))
+        response = self.client.get(reverse("repair_export_pdf", args=[job.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Intake Receipt")
-        
+
         claim = WarrantyClaim.objects.create(
             date_in=date.today(), received_by="Asha", sold_to=self.client_a,
             machine=self.machine,
         )
-        response = self.client.get(reverse("warranty_receipt", args=[claim.pk]))
+        response = self.client.get(reverse("warranty_export_pdf_client", args=[claim.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Warranty Claim Slip")
 
     @override_settings(
         STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
@@ -404,6 +402,34 @@ class TicketFormValidationTests(TestCase):
         # Both should be allowed
         self.assertEqual(self.client.get(reverse("repair_list")).status_code, 200)
         self.assertEqual(self.client.get(reverse("warranty_list")).status_code, 200)
+
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_not_repaired_status_exit(self):
+        user = get_user_model().objects.create_user(username="repair-staff-nr", password="test-password")
+        user.groups.add(Group.objects.get(name="Repair Desk"))
+        self.client.force_login(user)
+
+        job = RepairJob.objects.create(
+            date_in=date(2026, 8, 1), client=self.client_a, received_by="Intake Staff",
+            machine=self.machine, problem_cause="Unfixable board"
+        )
+        response = self.client.post(reverse("repair_exit", args=[job.pk]), {
+            "date_out": "2026-08-05",
+            "status": "not_repaired",
+            "taken_by": "Owner",
+            "solution_detail": "Motherboard completely burnt out, parts unavailable.",
+            "repaired_by": "",
+            "challan_number": "",
+        })
+        self.assertEqual(response.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, RepairJob.Status.NOT_REPAIRED)
+        self.assertTrue(job.is_not_repaired)
+        self.assertTrue(job.is_closed)
+        self.assertFalse(job.is_completed)
+
 
 
 

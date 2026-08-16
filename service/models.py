@@ -65,8 +65,9 @@ def _next_job_number(model, prefix):
 
 class RepairJob(models.Model):
     class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        COMPLETED = "completed", "Completed"
+        PENDING      = "pending",      "Pending"
+        COMPLETED    = "completed",    "Completed"
+        NOT_REPAIRED = "not_repaired", "Not Repaired"
 
     job_number = models.CharField(max_length=20, unique=True, editable=False, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
@@ -105,6 +106,15 @@ class RepairJob(models.Model):
     @property
     def is_completed(self):
         return self.status == self.Status.COMPLETED
+
+    @property
+    def is_not_repaired(self):
+        return self.status == self.Status.NOT_REPAIRED
+
+    @property
+    def is_closed(self):
+        """True when the job has been closed — either completed or returned unrepaired."""
+        return self.status in (self.Status.COMPLETED, self.Status.NOT_REPAIRED)
 
     @property
     def date_in_bs(self):

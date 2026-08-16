@@ -12,7 +12,7 @@
 {% if mode == 'exit' %}
 <div class="autofill-strip">
   <div class="af-item"><span class="af-label">Job No.</span><span class="af-value mono">{{ job.job_number }}</span></div>
-  <div class="af-item"><span class="af-label">Client</span><span class="af-value">{{ job.client.name }}</span></div>
+  <div class="af-item"><span class="af-label">Client</span><span class="af-value">{{ job.client }}</span></div>
   <div class="af-item"><span class="af-label">Machine</span><span class="af-value">{{ job.machine.machine_type }} — {{ job.machine.brand }} {{ job.machine.model_name }}</span></div>
   <div class="af-item"><span class="af-label">Serial No.</span><span class="af-value mono">{{ job.machine.serial_number|default:"—" }}</span></div>
   <div class="af-item"><span class="af-label">Date In</span><span class="af-value">{{ job.date_in }}</span></div>
@@ -57,7 +57,7 @@
       {% else %}
         <div class="form-grid">
           <div class="form-group">
-            <label>Date Out</label>
+            <label>Date Out <span class="req">*</span></label>
             {{ form.date_out }}
             {{ form.date_out.errors }}
           </div>
@@ -66,24 +66,30 @@
             {{ form.status }}
             {{ form.status.errors }}
           </div>
-          <div class="form-group">
-            <label>Repaired By <span class="req">*</span></label>
+
+          {# repaired_by — hidden when Not Repaired #}
+          <div class="form-group" id="row-repaired-by">
+            <label>Repaired By <span class="req" id="req-repaired-by">*</span></label>
             {{ form.repaired_by }}
             {{ form.repaired_by.errors }}
           </div>
+
           <div class="form-group">
-            <label>Taken By</label>
+            <label>Taken By <span class="req">*</span></label>
             {{ form.taken_by }}
             {{ form.taken_by.errors }}
           </div>
-          <div class="form-group">
-            <label>Challan Number <span class="req">*</span></label>
+
+          {# challan — hidden when Not Repaired #}
+          <div class="form-group" id="row-challan">
+            <label>Challan Number <span class="req" id="req-challan">*</span></label>
             {{ form.challan_number }}
             {{ form.challan_number.errors }}
-            <span class="help-text">Required before item can be exited</span>
+            <span class="help-text" id="hint-challan">Required before item can be exited</span>
           </div>
+
           <div class="form-group full">
-            <label>Solution / Repair Detail <span class="req">*</span></label>
+            <label id="label-solution">Solution / Repair Detail <span class="req">*</span></label>
             {{ form.solution_detail }}
             {{ form.solution_detail.errors }}
           </div>
@@ -92,11 +98,40 @@
 
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          {% if mode == 'entry' %}Log Intake{% else %}Save & Close Ticket{% endif %}
+          {% if mode == 'entry' %}Log Intake{% else %}Save &amp; Close Ticket{% endif %}
         </button>
         <a href="{% if mode == 'exit' %}{% url 'repair_detail' job.pk %}{% else %}{% url 'repair_list' %}{% endif %}" class="btn btn-outline">Cancel</a>
       </div>
     </form>
   </div>
 </div>
+
+{% if mode == 'exit' %}
+<script>
+(function () {
+  const statusEl   = document.getElementById('id_status');
+  const rowRepaired = document.getElementById('row-repaired-by');
+  const rowChallan  = document.getElementById('row-challan');
+  const labelSol    = document.getElementById('label-solution');
+
+  function toggle() {
+    const val = statusEl.value;
+    const isNotRepaired = val === 'not_repaired';
+
+    // Show / hide Repaired By and Challan rows
+    rowRepaired.style.display = isNotRepaired ? 'none' : '';
+    rowChallan.style.display  = isNotRepaired ? 'none' : '';
+
+    // Rename the solution label
+    labelSol.childNodes[0].textContent = isNotRepaired
+      ? 'Reason / Cause (Not Repaired) '
+      : 'Solution / Repair Detail ';
+  }
+
+  statusEl.addEventListener('change', toggle);
+  toggle(); // run on page load in case of form re-render after error
+})();
+</script>
+{% endif %}
+
 {% endblock %}

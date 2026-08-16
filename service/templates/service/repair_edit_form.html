@@ -43,7 +43,7 @@
         </div>
       </div>
 
-      {% if job.date_out %}
+      {% if form.date_out %}
       <h3 style="margin-bottom:16px; font-size:1.1rem; color:var(--color-primary); border-top:1px solid var(--color-line); padding-top:20px;">Exit Information</h3>
       <div class="form-grid">
         <div class="form-group">
@@ -56,7 +56,7 @@
           {{ form.status }}
           {{ form.status.errors }}
         </div>
-        <div class="form-group">
+        <div class="form-group" id="row-repaired-by">
           <label>Repaired By</label>
           {{ form.repaired_by }}
           {{ form.repaired_by.errors }}
@@ -66,13 +66,13 @@
           {{ form.taken_by }}
           {{ form.taken_by.errors }}
         </div>
-        <div class="form-group">
+        <div class="form-group" id="row-challan">
           <label>Challan Number</label>
           {{ form.challan_number }}
           {{ form.challan_number.errors }}
         </div>
         <div class="form-group full">
-          <label>Solution / Repair Detail</label>
+          <label id="label-solution">Solution / Repair Detail</label>
           {{ form.solution_detail }}
           {{ form.solution_detail.errors }}
         </div>
@@ -91,4 +91,35 @@
     </form>
   </div>
 </div>
+
+{% if form.date_out %}
+<script>
+(function () {
+  const statusEl = document.getElementById('id_status');
+  const rowRepaired = document.getElementById('row-repaired-by');
+  const rowChallan = document.getElementById('row-challan');
+  const labelSol = document.getElementById('label-solution');
+
+  if (!statusEl) return;
+
+  function toggle() {
+    const val = statusEl.value;
+    const isNotRepaired = val === 'not_repaired';
+
+    if (rowRepaired) rowRepaired.style.display = isNotRepaired ? 'none' : '';
+    if (rowChallan) rowChallan.style.display = isNotRepaired ? 'none' : '';
+
+    if (labelSol) {
+      labelSol.textContent = isNotRepaired
+        ? 'Reason / Cause (Not Repaired)'
+        : 'Solution / Repair Detail';
+    }
+  }
+
+  statusEl.addEventListener('change', toggle);
+  toggle();
+})();
+</script>
+{% endif %}
+
 {% endblock %}

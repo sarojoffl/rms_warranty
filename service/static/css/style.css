@@ -510,6 +510,7 @@ a.job-num:hover, .link-primary:hover {
 .stamp.pending { color: var(--color-amber-text); background: var(--color-amber-bg); border-color: var(--color-amber-border); }
 .stamp.completed, .stamp.solved, .stamp.yes { color: var(--color-success-text); background: var(--color-success-bg); border-color: var(--color-success-border); }
 .stamp.not_solved, .stamp.no { color: var(--color-danger-text); background: var(--color-danger-bg); border-color: var(--color-danger-border); }
+.stamp.not_repaired { color: #92400e; background: #fef3c7; border-color: #f59e0b; }
 .stamp.neutral { color: var(--color-ink-muted); background: rgba(16, 21, 34, 0.05); border-color: var(--color-line); }
 
 /* ==========================================================================

@@ -12,7 +12,7 @@
 {% if mode == 'exit' %}
 <div class="autofill-strip">
   <div class="af-item"><span class="af-label">Job No.</span><span class="af-value mono">{{ claim.job_number }}</span></div>
-  <div class="af-item"><span class="af-label">Sold To</span><span class="af-value">{{ claim.sold_to.name }}</span></div>
+  <div class="af-item"><span class="af-label">Sold To</span><span class="af-value">{{ claim.sold_to }}</span></div>
   <div class="af-item"><span class="af-label">Machine</span><span class="af-value">{{ claim.machine.machine_type }} — {{ claim.machine.brand }} {{ claim.machine.model_name }}</span></div>
   <div class="af-item"><span class="af-label">Serial No.</span><span class="af-value mono">{{ claim.machine.serial_number|default:"—" }}</span></div>
   <div class="af-item"><span class="af-label">Warranty Sent</span><span class="af-value">{{ claim.warranty_sent_date|default:"—" }}</span></div>
