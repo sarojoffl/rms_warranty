@@ -15,13 +15,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 
+from reportlab.lib.units import inch
+
 from .forms import (
     ClientForm, MachineForm, RepairJobEntryForm, RepairJobExitForm,
     WarrantyClaimEntryForm, WarrantyClaimExitForm,
     RepairJobEditForm, WarrantyClaimEditForm,
 )
 from .models import ActivityLog, Client, Machine, RepairJob, WarrantyClaim
-from .pdf_utils import build_report_pdf
+from .pdf_utils import build_report_pdf, build_tabular_report_pdf
 
 MANAGEMENT_GROUP = "Management"
 REPAIR_GROUP    = "Repair Desk"
@@ -570,15 +572,16 @@ def management_logs(request):
     })
 
 
-@repair_required
-def repair_list(request):
+def _filter_repairs(request):
     jobs = RepairJob.objects.select_related("client", "machine")
     status = request.GET.get("status", "").strip()
     client_id = request.GET.get("client_id", "").strip()
     serial_number = request.GET.get("serial_number", "").strip()
     date_in = request.GET.get("date_in", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
 
-    if status in ("pending", "completed"):
+    if status in ("pending", "completed", "not_repaired"):
         jobs = jobs.filter(status=status)
     if client_id and client_id.isdigit():
         jobs = jobs.filter(client_id=client_id)
@@ -586,23 +589,90 @@ def repair_list(request):
         jobs = jobs.filter(machine__serial_number__icontains=serial_number)
     if date_in:
         jobs = jobs.filter(date_in=date_in)
+    if date_from:
+        jobs = jobs.filter(date_in__gte=date_from)
+    if date_to:
+        jobs = jobs.filter(date_in__lte=date_to)
+
+    has_filters = bool(status or client_id or serial_number or date_in or date_from or date_to)
+
+    return jobs, {
+        "status": status,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
+        "serial_number": serial_number,
+        "date_in": date_in,
+        "date_from": date_from,
+        "date_to": date_to,
+        "has_filters": has_filters,
+    }
+
+
+@repair_required
+def repair_list(request):
+    jobs, filter_ctx = _filter_repairs(request)
 
     paginator = Paginator(jobs, 15)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     clients = Client.objects.all()
-    has_filters = bool(status or client_id or serial_number or date_in)
 
-    return render(request, "service/repair_list.html", {
+    ctx = {
         "jobs": page_obj,
         "page_obj": page_obj,
-        "status": status,
-        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
-        "serial_number": serial_number,
-        "date_in": date_in,
         "clients": clients,
-        "has_filters": has_filters,
-    })
+    }
+    ctx.update(filter_ctx)
+    return render(request, "service/repair_list.html", ctx)
+
+
+@repair_required
+def repair_report_pdf(request):
+    jobs, filters = _filter_repairs(request)
+
+    subtitle_parts = []
+    if filters["status"]:
+        subtitle_parts.append(f"Status: {filters['status'].replace('_', ' ').title()}")
+    if filters["client_id"]:
+        client_obj = Client.objects.filter(pk=filters["client_id"]).first()
+        if client_obj:
+            subtitle_parts.append(f"Client: {client_obj}")
+    if filters["serial_number"]:
+        subtitle_parts.append(f"S/N: {filters['serial_number']}")
+    if filters["date_from"] or filters["date_to"]:
+        d_from = filters["date_from"] or "Earliest"
+        d_to = filters["date_to"] or "Latest"
+        subtitle_parts.append(f"Date Range: {d_from} to {d_to}")
+
+    subtitle = " | ".join(subtitle_parts) if subtitle_parts else "All Repair Records"
+
+    headers = ["Job No.", "Date In (BS)", "Date Out (BS)", "Client", "Machine & Serial", "Status", "Technician / Detail"]
+    col_widths = [1.1 * inch, 1.3 * inch, 1.3 * inch, 1.7 * inch, 2.0 * inch, 1.0 * inch, 2.1 * inch]
+
+    rows = []
+    for j in jobs:
+        client_str = str(j.client)
+        machine_str = f"{j.machine.machine_type} - {j.machine.brand} {j.machine.model_name}"
+        if j.machine.serial_number:
+            machine_str += f" (S/N: {j.machine.serial_number})"
+
+        detail_str = j.repaired_by if j.repaired_by else ""
+        if j.solution_detail:
+            detail_str += f": {j.solution_detail[:60]}" if detail_str else j.solution_detail[:60]
+
+        rows.append([
+            j.job_number,
+            j.date_in_bs,
+            j.date_out_bs,
+            client_str,
+            machine_str,
+            j.get_status_display(),
+            detail_str or "—",
+        ])
+
+    summary_notes = f"Total Jobs: {jobs.count()}  |  Pending: {jobs.filter(status=RepairJob.Status.PENDING).count()}  |  Completed: {jobs.filter(status=RepairJob.Status.COMPLETED).count()}  |  Not Repaired: {jobs.filter(status=RepairJob.Status.NOT_REPAIRED).count()}"
+
+    filename = f"Repair_Jobs_Report_{date.today().strftime('%Y%m%d')}.pdf"
+    return build_tabular_report_pdf(filename, "REPAIR JOBS REPORT", subtitle, headers, rows, col_widths=col_widths, summary_notes=summary_notes)
 
 
 @repair_required
@@ -685,11 +755,14 @@ def repair_export_pdf(request, pk):
 # Warranty workflow
 # ---------------------------------------------------------------------------
 
-@warranty_required
-def warranty_list(request):
+def _filter_warranties(request):
     claims = WarrantyClaim.objects.select_related("sold_to", "machine")
     claimable = request.GET.get("claimable", "").strip()
+    solved = request.GET.get("solved", "").strip()
     client_id = request.GET.get("client_id", "").strip()
+    serial_number = request.GET.get("serial_number", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
 
     if claimable == "yes":
         claims = claims.filter(claimable=WarrantyClaim.Claimable.YES)
@@ -698,23 +771,97 @@ def warranty_list(request):
     elif claimable == "pending":
         claims = claims.filter(claimable="")
 
+    if solved in ("solved", "not_solved"):
+        claims = claims.filter(solved=solved)
+
     if client_id and client_id.isdigit():
         claims = claims.filter(sold_to_id=client_id)
+    if serial_number:
+        claims = claims.filter(machine__serial_number__icontains=serial_number)
+    if date_from:
+        claims = claims.filter(date_in__gte=date_from)
+    if date_to:
+        claims = claims.filter(date_in__lte=date_to)
+
+    has_filters = bool(claimable or solved or client_id or serial_number or date_from or date_to)
+
+    return claims, {
+        "claimable": claimable,
+        "solved": solved,
+        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
+        "serial_number": serial_number,
+        "date_from": date_from,
+        "date_to": date_to,
+        "has_filters": has_filters,
+    }
+
+
+@warranty_required
+def warranty_list(request):
+    claims, filter_ctx = _filter_warranties(request)
 
     paginator = Paginator(claims, 15)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     clients = Client.objects.all()
-    has_filters = bool(claimable or client_id)
 
-    return render(request, "service/warranty_list.html", {
+    ctx = {
         "claims": page_obj,
         "page_obj": page_obj,
-        "claimable": claimable,
-        "client_id": int(client_id) if client_id and client_id.isdigit() else None,
         "clients": clients,
-        "has_filters": has_filters,
-    })
+    }
+    ctx.update(filter_ctx)
+    return render(request, "service/warranty_list.html", ctx)
+
+
+@warranty_required
+def warranty_report_pdf(request):
+    claims, filters = _filter_warranties(request)
+
+    subtitle_parts = []
+    if filters["claimable"]:
+        subtitle_parts.append(f"Claimable: {filters['claimable'].title()}")
+    if filters["solved"]:
+        subtitle_parts.append(f"Status: {filters['solved'].replace('_', ' ').title()}")
+    if filters["client_id"]:
+        client_obj = Client.objects.filter(pk=filters["client_id"]).first()
+        if client_obj:
+            subtitle_parts.append(f"Client: {client_obj}")
+    if filters["serial_number"]:
+        subtitle_parts.append(f"S/N: {filters['serial_number']}")
+    if filters["date_from"] or filters["date_to"]:
+        d_from = filters["date_from"] or "Earliest"
+        d_to = filters["date_to"] or "Latest"
+        subtitle_parts.append(f"Date Range: {d_from} to {d_to}")
+
+    subtitle = " | ".join(subtitle_parts) if subtitle_parts else "All Warranty Records"
+
+    headers = ["Job No.", "Date In (BS)", "Sold To", "Bought From", "Machine & Serial", "Claimable", "Outcome"]
+    col_widths = [1.1 * inch, 1.3 * inch, 1.8 * inch, 1.4 * inch, 2.1 * inch, 1.2 * inch, 1.6 * inch]
+
+    rows = []
+    for c in claims:
+        client_str = str(c.sold_to)
+        machine_str = f"{c.machine.machine_type} - {c.machine.brand} {c.machine.model_name}"
+        if c.machine.serial_number:
+            machine_str += f" (S/N: {c.machine.serial_number})"
+
+        outcome = c.get_solved_display() if c.solved else "Open"
+
+        rows.append([
+            c.job_number,
+            c.date_in_bs,
+            client_str,
+            c.bought_from or "—",
+            machine_str,
+            c.get_claimable_display() or "Pending Review",
+            outcome,
+        ])
+
+    summary_notes = f"Total Claims: {claims.count()}  |  Approved: {claims.filter(claimable=WarrantyClaim.Claimable.YES).count()}  |  Rejected: {claims.filter(claimable=WarrantyClaim.Claimable.NO).count()}  |  Solved: {claims.filter(solved=WarrantyClaim.RepairStatus.SOLVED).count()}"
+
+    filename = f"Warranty_Claims_Report_{date.today().strftime('%Y%m%d')}.pdf"
+    return build_tabular_report_pdf(filename, "WARRANTY CLAIMS REPORT", subtitle, headers, rows, col_widths=col_widths, summary_notes=summary_notes)
 
 
 @warranty_required

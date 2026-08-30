@@ -18,6 +18,7 @@ urlpatterns = [
 
     # RMS
     path("repair/", views.repair_list, name="repair_list"),
+    path("repair/report/pdf/", views.repair_report_pdf, name="repair_report_pdf"),
     path("repair/new/", views.helpdesk_required(views.repair_create), name="repair_create"),
     path("repair/<int:pk>/", views.repair_detail, name="repair_detail"),
     path("repair/<int:pk>/edit/", views.repair_edit, name="repair_edit"),
@@ -26,6 +27,7 @@ urlpatterns = [
 
     # Warranty
     path("warranty/", views.warranty_list, name="warranty_list"),
+    path("warranty/report/pdf/", views.warranty_report_pdf, name="warranty_report_pdf"),
     path("warranty/new/", views.helpdesk_required(views.warranty_create), name="warranty_create"),
     path("warranty/<int:pk>/", views.warranty_detail, name="warranty_detail"),
     path("warranty/<int:pk>/edit/", views.warranty_edit, name="warranty_edit"),

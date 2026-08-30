@@ -430,6 +430,42 @@ class TicketFormValidationTests(TestCase):
         self.assertTrue(job.is_closed)
         self.assertFalse(job.is_completed)
 
+    @override_settings(
+        STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    )
+    def test_tabular_pdf_reports_generation_and_permissions(self):
+        repair_user = get_user_model().objects.create_user(username="rep-report-user", password="test-password")
+        repair_user.groups.add(Group.objects.get(name="Repair Desk"))
 
+        warranty_user = get_user_model().objects.create_user(username="war-report-user", password="test-password")
+        warranty_user.groups.add(Group.objects.get(name="Warranty Desk"))
 
+        # Create sample data
+        RepairJob.objects.create(
+            date_in=date(2026, 8, 10), client=self.client_a, received_by="Intake",
+            machine=self.machine, problem_cause="Screen crack"
+        )
+        WarrantyClaim.objects.create(
+            date_in=date(2026, 8, 12), received_by="Intake", sold_to=self.client_a,
+            machine=self.machine, claimable="yes"
+        )
 
+        # 1. Repair user tests
+        self.client.force_login(repair_user)
+        response = self.client.get(reverse("repair_report_pdf"), {"status": "pending", "date_from": "2026-08-01", "date_to": "2026-08-31"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("Repair_Jobs_Report_", response["Content-Disposition"])
+
+        # Forbidden for warranty report
+        self.assertEqual(self.client.get(reverse("warranty_report_pdf")).status_code, 403)
+
+        # 2. Warranty user tests
+        self.client.force_login(warranty_user)
+        response = self.client.get(reverse("warranty_report_pdf"), {"claimable": "yes"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("Warranty_Claims_Report_", response["Content-Disposition"])
+
+        # Forbidden for repair report
+        self.assertEqual(self.client.get(reverse("repair_report_pdf")).status_code, 403)

@@ -19,9 +19,10 @@
     <div>
       <label style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Status:</label>
       <div class="filter-tabs" style="margin-bottom:0;">
-        <a href="?status={% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if not status %}active{% endif %}">All</a>
-        <a href="?status=pending{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if status == 'pending' %}active{% endif %}">Pending</a>
-        <a href="?status=completed{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_in %}&date_in={{ date_in }}{% endif %}" class="filter-tab {% if status == 'completed' %}active{% endif %}">Completed</a>
+        <a href="?status={% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if not status %}active{% endif %}">All</a>
+        <a href="?status=pending{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if status == 'pending' %}active{% endif %}">Pending</a>
+        <a href="?status=completed{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if status == 'completed' %}active{% endif %}">Completed</a>
+        <a href="?status=not_repaired{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if status == 'not_repaired' %}active{% endif %}">Not Repaired</a>
       </div>
       {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
     </div>
@@ -42,8 +43,13 @@
     </div>
 
     <div>
-      <label for="date_in" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date:</label>
-      <input type="date" name="date_in" id="date_in" value="{{ date_in }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+      <label for="date_from" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date From:</label>
+      <input type="date" name="date_from" id="date_from" value="{{ date_from }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+    </div>
+
+    <div>
+      <label for="date_to" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date To:</label>
+      <input type="date" name="date_to" id="date_to" value="{{ date_to }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
     </div>
 
     <div style="display:flex; gap:8px;">
@@ -51,6 +57,10 @@
       {% if has_filters %}
         <a href="{% url 'repair_list' %}" class="btn btn-outline btn-sm" style="height:36px; display:inline-flex; align-items:center;">Reset</a>
       {% endif %}
+      <a href="{% url 'repair_report_pdf' %}?status={{ status }}&client_id={{ client_id|default:'' }}&serial_number={{ serial_number }}&date_from={{ date_from }}&date_to={{ date_to }}" target="_blank" class="btn btn-outline btn-sm" style="height:36px; display:inline-flex; align-items:center; gap:6px;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Export PDF
+      </a>
     </div>
   </form>
 </div>

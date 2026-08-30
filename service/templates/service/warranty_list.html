@@ -14,26 +14,54 @@
   </a>{% endif %}
 </div>
 
-<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
-  <div class="filter-tabs" style="margin-bottom:0;">
-    <a href="{% url 'warranty_list' %}{% if client_id %}?client_id={{ client_id }}{% endif %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
-    <a href="?claimable=pending{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'pending' %}active{% endif %}">Pending Review</a>
-    <a href="?claimable=yes{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Approved</a>
-    <a href="?claimable=no{% if client_id %}&client_id={{ client_id }}{% endif %}" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Rejected</a>
-  </div>
+<div class="card" style="padding:14px 18px; margin-bottom:20px;">
+  <form method="get" action="{% url 'warranty_list' %}" style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px; margin:0;">
+    <div>
+      <label style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Claim Approval:</label>
+      <div class="filter-tabs" style="margin-bottom:0;">
+        <a href="?claimable={% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if not claimable %}active{% endif %}">All</a>
+        <a href="?claimable=pending{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if claimable == 'pending' %}active{% endif %}">Pending</a>
+        <a href="?claimable=yes{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if claimable == 'yes' %}active{% endif %}">Approved</a>
+        <a href="?claimable=no{% if client_id %}&client_id={{ client_id }}{% endif %}{% if serial_number %}&serial_number={{ serial_number }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="filter-tab {% if claimable == 'no' %}active{% endif %}">Rejected</a>
+      </div>
+      {% if claimable %}<input type="hidden" name="claimable" value="{{ claimable }}">{% endif %}
+    </div>
 
-  <form method="get" action="{% url 'warranty_list' %}" style="display:flex; align-items:center; gap:8px; margin:0;">
-    {% if claimable %}<input type="hidden" name="claimable" value="{{ claimable }}">{% endif %}
-    <label for="client_id" style="font-weight:600; font-size:0.85rem; color:var(--color-text-muted);">Client Filter:</label>
-    <select name="client_id" id="client_id" style="padding:6px 12px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff;" onchange="this.form.submit()">
-      <option value="">All Clients</option>
-      {% for c in clients %}
-        <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
-      {% endfor %}
-    </select>
-    {% if has_filters %}
-      <a href="{% url 'warranty_list' %}" class="btn btn-outline btn-sm">Reset</a>
-    {% endif %}
+    <div>
+      <label for="client_id" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Client Filter:</label>
+      <select name="client_id" id="client_id" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+        <option value="">All Clients</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="serial_number" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Serial Number (S/N):</label>
+      <input type="text" name="serial_number" id="serial_number" value="{{ serial_number }}" placeholder="Enter S/N..." style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px; min-width:140px;">
+    </div>
+
+    <div>
+      <label for="date_from" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date From:</label>
+      <input type="date" name="date_from" id="date_from" value="{{ date_from }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+    </div>
+
+    <div>
+      <label for="date_to" style="display:block; font-weight:600; font-size:0.8rem; color:var(--color-text-muted); margin-bottom:4px;">Date To:</label>
+      <input type="date" name="date_to" id="date_to" value="{{ date_to }}" style="padding:6px 10px; font-size:0.85rem; border:1px solid #d1d5db; border-radius:6px; background:#fff; height:36px;">
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button type="submit" class="btn btn-primary btn-sm" style="height:36px; padding:0 14px;">Filter</button>
+      {% if has_filters %}
+        <a href="{% url 'warranty_list' %}" class="btn btn-outline btn-sm" style="height:36px; display:inline-flex; align-items:center;">Reset</a>
+      {% endif %}
+      <a href="{% url 'warranty_report_pdf' %}?claimable={{ claimable }}&solved={{ solved }}&client_id={{ client_id|default:'' }}&serial_number={{ serial_number }}&date_from={{ date_from }}&date_to={{ date_to }}" target="_blank" class="btn btn-outline btn-sm" style="height:36px; display:inline-flex; align-items:center; gap:6px;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Export PDF
+      </a>
+    </div>
   </form>
 </div>
 
